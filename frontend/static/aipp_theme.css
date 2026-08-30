@@ -1,0 +1,449 @@
+/* ============================================================================
+ * AIPP · Futuristic Control-Tower Theme
+ * ----------------------------------------------------------------------------
+ * Injected via `gr.Blocks(css=...)`. Applies on top of Gradio's Soft theme
+ * to nudge the visual language toward "automation control tower":
+ *   - Deep navy → indigo → violet background gradient
+ *   - Glass panels (backdrop-blur), thin cyan borders, soft neon glow
+ *   - Monospace headers (JetBrains Mono via Google Fonts)
+ *   - Animated tabs, buttons with subtle motion
+ *   - "Agentic aura" progress indicator — see .aipp-agent-running below
+ *
+ * All rules are prefixed with :root vars or `.gradio-container` to stay
+ * inside our Gradio scope and not leak into any embedded iframe.
+ * ========================================================================== */
+
+/* NOTE: Google Fonts are loaded via a <link> tag injected in gradio_app.py
+ * (`head=` param). Do NOT use `@import` here — Gradio inserts this CSS as a
+ * constructable stylesheet where `@import` is silently dropped and produces
+ * "@import rules are not allowed here" console warnings. */
+
+:root {
+    --aipp-bg-1: #050a1c;              /* deeper midnight blue */
+    --aipp-bg-2: #0a1436;
+    --aipp-bg-3: #0e1e4d;
+    --aipp-glass: rgba(255, 255, 255, 0.04);
+    --aipp-glass-strong: rgba(255, 255, 255, 0.08);
+    --aipp-border: rgba(96, 165, 250, 0.22);
+    --aipp-accent-1: #4dc4ff;          /* electric cyan-blue */
+    --aipp-accent-2: #2563eb;          /* royal blue */
+    --aipp-accent-3: #60a5fa;          /* sky blue */
+    --aipp-good: #6ee7b7;
+    --aipp-warn: #fbbf24;
+    --aipp-bad:  #f87171;
+    --aipp-text: #e6f0ff;
+    --aipp-text-dim: #93a8c9;
+}
+
+/* -------------------------------------------------------------------------- *
+ * Auth gate — the app group mounts visible so Gradio 4.44's Tabs component
+ * can bind its DOM listeners cleanly, but stays visually hidden until the
+ * user signs in (Python code toggles the `.aipp-locked` class via
+ * `gr.update(elem_classes=[])`).
+ *
+ * We use `visibility: hidden; position: absolute` instead of `display: none`
+ * so tab panes remain in the render tree — otherwise Svelte fails to attach
+ * `addEventListener` refs during hydration.
+ * -------------------------------------------------------------------------- */
+.aipp-locked {
+    visibility: hidden !important;
+    position: absolute !important;
+    left: -99999px !important;
+    pointer-events: none !important;
+    height: 1px !important;
+    width: 1px !important;
+    overflow: hidden !important;
+}
+
+.gradio-container, .gradio-container * {
+    font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif !important;
+    color: var(--aipp-text);
+}
+
+.gradio-container h1, .gradio-container h2, .gradio-container h3,
+.gradio-container .prose h1, .gradio-container .prose h2, .gradio-container .prose h3 {
+    font-family: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace !important;
+    letter-spacing: -0.01em !important;
+    color: var(--aipp-text) !important;
+    text-shadow: 0 0 12px rgba(77, 196, 255, 0.22);
+}
+
+/* ---- Background ---------------------------------------------------------- */
+.gradio-container {
+    background:
+        radial-gradient(ellipse 90% 55% at 50% -10%, rgba(37, 99, 235, 0.28), transparent 60%),
+        radial-gradient(ellipse 60% 40% at 100% 0%, rgba(77, 196, 255, 0.18), transparent 60%),
+        radial-gradient(ellipse 60% 40% at 0% 100%, rgba(96, 165, 250, 0.14), transparent 60%),
+        linear-gradient(180deg, var(--aipp-bg-1) 0%, var(--aipp-bg-2) 45%, var(--aipp-bg-3) 100%) !important;
+    min-height: 100vh;
+}
+
+/* Faint grid noise for a "control-panel" vibe */
+.gradio-container::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image:
+        linear-gradient(rgba(77, 196, 255,0.04) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(77, 196, 255,0.04) 1px, transparent 1px);
+    background-size: 44px 44px;
+    pointer-events: none;
+    z-index: 0;
+    mask-image: radial-gradient(ellipse 60% 60% at 50% 30%, black, transparent 70%);
+}
+
+.gradio-container > * { position: relative; z-index: 1; }
+
+/* ---- Cards / panels ------------------------------------------------------ */
+/*
+ * IMPORTANT: do NOT use `backdrop-filter` on containers that wrap form
+ * controls (Dropdown, Radio, DataFrame). `backdrop-filter` creates a new
+ * stacking context AND a new containing block for fixed-positioned
+ * descendants — which traps Gradio 4.44's dropdown popover so the option
+ * list either renders behind the card or gets clipped. This looks to the
+ * user like "the dropdown doesn't work". We keep the glassy look via the
+ * translucent background + border only.
+ */
+.gradio-container .form,
+.gradio-container .block,
+.gradio-container .gr-box,
+.gradio-container .gr-group,
+.gradio-container .gr-panel {
+    background: var(--aipp-glass) !important;
+    border: 1px solid var(--aipp-border) !important;
+    border-radius: 14px !important;
+    box-shadow:
+        0 8px 24px -12px rgba(0,0,0,0.45),
+        inset 0 1px 0 rgba(255,255,255,0.06);
+    transition: border-color 220ms ease, box-shadow 220ms ease;
+}
+.gradio-container .form:hover,
+.gradio-container .gr-box:hover {
+    border-color: rgba(77, 196, 255,0.45) !important;
+    box-shadow:
+        0 12px 32px -14px rgba(0,0,0,0.55),
+        0 0 0 1px rgba(77, 196, 255,0.15),
+        inset 0 1px 0 rgba(255,255,255,0.08);
+}
+
+/*
+ * Ensure Gradio dropdown option popovers float above all cards/panels
+ * regardless of stacking context. Gradio renders the option list inside
+ * a `.options` container within the same wrapper as the input.
+ */
+/*
+ * Ensure Gradio dropdown option popovers float above all cards/panels
+ * regardless of stacking context. Gradio's own `DropdownOptions.svelte`
+ * uses `position: fixed` and computes `top`/`bottom` from viewport coords
+ * via `getBoundingClientRect()` — DO NOT override `position` here (that
+ * shifted the popover offscreen in the first attempt of this fix). We
+ * only bump z-index and restyle the surface.
+ */
+.gradio-container .gr-dropdown ul,
+.gradio-container .gr-dropdown .options,
+.gradio-container ul.options,
+.gradio-container .wrap-inner + ul,
+.gradio-container [data-testid="dropdown-options"] {
+    z-index: 9999 !important;
+    background: rgba(6, 10, 30, 0.98) !important;
+    border: 1px solid var(--aipp-border) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 12px 32px -8px rgba(0,0,0,0.6) !important;
+}
+
+/* ---- Inputs -------------------------------------------------------------- */
+.gradio-container input,
+.gradio-container textarea,
+.gradio-container select,
+.gradio-container .gr-dropdown {
+    background: rgba(6, 10, 30, 0.55) !important;
+    color: var(--aipp-text) !important;
+    border: 1px solid var(--aipp-border) !important;
+    border-radius: 10px !important;
+    transition: all 180ms ease;
+}
+.gradio-container input:focus,
+.gradio-container textarea:focus,
+.gradio-container select:focus {
+    outline: none !important;
+    border-color: var(--aipp-accent-1) !important;
+    box-shadow: 0 0 0 3px rgba(77, 196, 255,0.20) !important;
+}
+
+/* ---- Buttons — with a subtle rising motion ------------------------------ */
+.gradio-container .primary,
+.gradio-container button.primary,
+.gradio-container .gr-button-primary {
+    background: linear-gradient(120deg, var(--aipp-accent-2) 0%, var(--aipp-accent-1) 100%) !important;
+    color: #06102a !important;
+    font-weight: 600 !important;
+    border: none !important;
+    border-radius: 10px !important;
+    transition: transform 160ms ease, box-shadow 200ms ease, filter 200ms ease !important;
+    box-shadow: 0 6px 22px -8px rgba(77, 196, 255,0.60);
+}
+.gradio-container .primary:hover,
+.gradio-container button.primary:hover,
+.gradio-container .gr-button-primary:hover {
+    transform: translateY(-1px);
+    filter: brightness(1.08);
+    box-shadow: 0 10px 28px -10px rgba(77, 196, 255,0.75);
+}
+.gradio-container button.primary:active { transform: translateY(0); }
+
+.gradio-container .secondary,
+.gradio-container button.secondary,
+.gradio-container .gr-button-secondary {
+    background: rgba(255,255,255,0.06) !important;
+    color: var(--aipp-text) !important;
+    border: 1px solid var(--aipp-border) !important;
+    border-radius: 10px !important;
+    transition: transform 160ms, background 200ms !important;
+}
+.gradio-container .secondary:hover,
+.gradio-container button.secondary:hover {
+    background: rgba(255,255,255,0.10) !important;
+    transform: translateY(-1px);
+}
+
+/* ---- Tabs — animated indicator ------------------------------------------ */
+.gradio-container .tab-nav {
+    gap: 4px !important;
+    border-bottom: 1px solid var(--aipp-border) !important;
+    padding-bottom: 2px;
+}
+.gradio-container .tab-nav > button {
+    background: transparent !important;
+    color: var(--aipp-text-dim) !important;
+    border: none !important;
+    border-bottom: 2px solid transparent !important;
+    border-radius: 10px 10px 0 0 !important;
+    padding: 10px 14px !important;
+    transition: color 200ms, border-color 220ms, background 200ms;
+}
+.gradio-container .tab-nav > button:hover {
+    color: var(--aipp-accent-1) !important;
+    background: rgba(77, 196, 255,0.06) !important;
+}
+.gradio-container .tab-nav > button.selected {
+    color: #fff !important;
+    border-bottom-color: var(--aipp-accent-1) !important;
+    background:
+        linear-gradient(180deg, rgba(77, 196, 255,0.10), rgba(77, 196, 255,0.02)) !important;
+}
+
+/* ---- Markdown / labels -------------------------------------------------- */
+.gradio-container label,
+.gradio-container .gr-label,
+.gradio-container .label {
+    color: var(--aipp-text-dim) !important;
+    letter-spacing: 0.02em !important;
+    text-transform: uppercase;
+    font-size: 11px !important;
+    font-weight: 600 !important;
+}
+.gradio-container code,
+.gradio-container pre code {
+    background: rgba(6, 10, 30, 0.65) !important;
+    border: 1px solid var(--aipp-border) !important;
+    border-radius: 6px !important;
+    padding: 1px 6px !important;
+    color: var(--aipp-accent-1) !important;
+    font-family: 'JetBrains Mono', monospace !important;
+}
+
+/* Section separators */
+.gradio-container hr {
+    border: none;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--aipp-border) 20%, var(--aipp-border) 80%, transparent);
+}
+
+/* ============================================================================
+ * Agentic Aura — the visual signature of a running agent.
+ * Applied by frontend/tabs/pipeline_generator.py through an HTML block.
+ * The `.aipp-agent-running` class receives a rotating conic gradient +
+ * subtle pulse. `.aipp-agent-done` snaps to a green tick.
+ * ========================================================================== */
+@keyframes aipp-aura-rotate {
+    0%   { transform: rotate(0deg);   }
+    100% { transform: rotate(360deg); }
+}
+@keyframes aipp-aura-breathe {
+    0%,100% { opacity: 0.85; transform: scale(1);   }
+    50%     { opacity: 1.00; transform: scale(1.02); }
+}
+@keyframes aipp-progress-shine {
+    0%   { background-position: -200% 0; }
+    100% { background-position:  200% 0; }
+}
+
+.aipp-progress-strip {
+    position: relative;
+    height: 6px;
+    border-radius: 3px;
+    overflow: hidden;
+    background: rgba(255,255,255,0.06);
+}
+.aipp-progress-strip::after {
+    content: "";
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        var(--aipp-accent-1) 45%,
+        var(--aipp-accent-2) 55%,
+        transparent 100%);
+    background-size: 200% 100%;
+    animation: aipp-progress-shine 1.6s linear infinite;
+}
+
+.aipp-agent-row {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 14px;
+    background: var(--aipp-glass);
+    border: 1px solid var(--aipp-border);
+    border-radius: 12px;
+    margin: 6px 0;
+    transition: all 220ms ease;
+}
+.aipp-agent-row.aipp-agent-running {
+    position: relative;   /* anchor the scanner pseudo-element */
+    animation: aipp-aura-breathe 1.6s ease-in-out infinite;
+    border-color: var(--aipp-accent-1);
+    box-shadow:
+        0 0 0 1px rgba(77, 196, 255,0.35),
+        0 10px 32px -10px rgba(77, 196, 255,0.45);
+    overflow: hidden;     /* clip the scanner to the row's rounded corners */
+}
+/*
+ * Iteration-26.2 · in-row "scanner" bar that clearly telegraphs a
+ * running agent. A gradient stripe sweeps across the bottom edge of the
+ * row every 1.4s. The keyframes are defined below with a slower, wider
+ * shine than the top progress strip so the two animations don't fight.
+ */
+.aipp-agent-row.aipp-agent-running::after {
+    content: "";
+    position: absolute;
+    left: 0; right: 0; bottom: 0;
+    height: 3px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        rgba(77, 196, 255, 0.15) 20%,
+        var(--aipp-accent-1) 45%,
+        var(--aipp-accent-2) 55%,
+        rgba(77, 196, 255, 0.15) 80%,
+        transparent 100%);
+    background-size: 200% 100%;
+    animation: aipp-agent-scan 1.4s linear infinite;
+    pointer-events: none;
+}
+@keyframes aipp-agent-scan {
+    0%   { background-position: -100% 0; }
+    100% { background-position:  200% 0; }
+}
+.aipp-agent-row.aipp-agent-done {
+    border-color: rgba(110, 231, 183, 0.55);
+    background: linear-gradient(90deg, rgba(110,231,183,0.10), var(--aipp-glass));
+}
+.aipp-agent-row.aipp-agent-failed {
+    border-color: rgba(248, 113, 113, 0.55);
+    background: linear-gradient(90deg, rgba(248,113,113,0.10), var(--aipp-glass));
+}
+
+.aipp-agent-orb {
+    width: 22px; height: 22px;
+    border-radius: 50%;
+    background: conic-gradient(from 0deg,
+        var(--aipp-accent-2), var(--aipp-accent-1), var(--aipp-accent-3), var(--aipp-accent-2));
+    box-shadow: 0 0 12px 2px rgba(77, 196, 255,0.55);
+    flex-shrink: 0;
+}
+.aipp-agent-running .aipp-agent-orb {
+    animation: aipp-aura-rotate 2.4s linear infinite;
+}
+.aipp-agent-done .aipp-agent-orb {
+    background: var(--aipp-good);
+    box-shadow: 0 0 12px 2px rgba(110,231,183,0.55);
+    animation: none;
+}
+.aipp-agent-done .aipp-agent-orb::before {
+    content: "✓"; color: #06102a; font-weight: 900;
+    display: grid; place-items: center; height: 100%; font-size: 14px;
+}
+.aipp-agent-failed .aipp-agent-orb {
+    background: var(--aipp-bad);
+    box-shadow: 0 0 12px 2px rgba(248,113,113,0.55);
+    animation: none;
+}
+.aipp-agent-failed .aipp-agent-orb::before {
+    content: "!"; color: #240012; font-weight: 900;
+    display: grid; place-items: center; height: 100%; font-size: 14px;
+}
+
+.aipp-agent-name {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 13px;
+    color: var(--aipp-text);
+    letter-spacing: 0.02em;
+}
+.aipp-agent-detail {
+    color: var(--aipp-text-dim);
+    font-size: 12px;
+    margin-left: auto;
+}
+
+/* ---- Login card special-case -------------------------------------------- */
+#login-group {
+    max-width: 460px;
+    margin: 40px auto !important;
+    padding: 28px !important;
+    background:
+        radial-gradient(ellipse 80% 40% at 50% 0%, rgba(37, 99, 235, 0.22), transparent 70%),
+        var(--aipp-glass-strong) !important;
+    border: 1px solid var(--aipp-border) !important;
+    border-radius: 18px !important;
+    backdrop-filter: blur(18px) saturate(150%);
+}
+
+/* ---- Selection accent --------------------------------------------------- */
+.gradio-container ::selection {
+    background: rgba(77, 196, 255,0.35);
+    color: #06102a;
+}
+
+
+/* ---- Footer (iteration-26.5) -------------------------------------------- */
+/* Hide Gradio's default "Built with Gradio" badge — we ship our own. */
+.gradio-container > footer,
+.gradio-container footer.built-with,
+.gradio-container footer[class*="svelte"] {
+    display: none !important;
+}
+.aipp-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 16px;
+    flex-wrap: wrap;
+    margin: 24px 0 12px;
+    padding: 14px 20px;
+    border-radius: 12px;
+    background: var(--aipp-glass);
+    border: 1px solid var(--aipp-border);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    color: var(--aipp-text-dim);
+}
+.aipp-footer a {
+    color: var(--aipp-accent-1) !important;
+    text-decoration: none !important;
+    font-weight: 600;
+}
+.aipp-footer a:hover { text-decoration: underline !important; }
+.aipp-footer-counter {
+    padding: 4px 10px;
+    border-radius: 999px;
+    background: rgba(77, 196, 255, 0.10);
+    color: var(--aipp-accent-1);
+    letter-spacing: 0.03em;
+    font-weight: 600;
+}

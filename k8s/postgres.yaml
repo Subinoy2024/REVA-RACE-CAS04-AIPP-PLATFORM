@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: aipp-postgres
+  namespace: aipp
+  labels:
+    app.kubernetes.io/name: aipp-postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: aipp-platform
+spec:
+  serviceName: aipp-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: aipp-postgres
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: aipp-postgres
+        app.kubernetes.io/component: database
+    spec:
+      containers:
+        - name: postgres
+          image: pgvector/pgvector:pg15
+          imagePullPolicy: IfNotPresent
+          envFrom:
+            - secretRef:
+                name: aipp-secret
+          ports:
+            - containerPort: 5432
+              name: postgres
+          volumeMounts:
+            - name: postgres-storage
+              mountPath: /var/lib/postgresql/data
+              subPath: postgres
+          resources:
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+            limits:
+              cpu: "1000m"
+              memory: "1Gi"
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U ${POSTGRES_USER:-aipp} -d ${POSTGRES_DB:-aipp}
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            timeoutSeconds: 3
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - pg_isready -U ${POSTGRES_USER:-aipp} -d ${POSTGRES_DB:-aipp}
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
+  volumeClaimTemplates:
+    - metadata:
+        name: postgres-storage
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 2Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: aipp-postgres
+  namespace: aipp
+  labels:
+    app.kubernetes.io/name: aipp-postgres
+    app.kubernetes.io/component: database
+    app.kubernetes.io/part-of: aipp-platform
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: postgres
+  selector:
+    app.kubernetes.io/name: aipp-postgres

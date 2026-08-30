@@ -1,0 +1,331 @@
+{
+  "name": "AIPP \u00b7 09 \u00b7 Weekly Azure Cost Review",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 * * 1"
+            }
+          ]
+        }
+      },
+      "id": "5b3cebb8-712f-5ff9-b037-bd88a44a1529",
+      "name": "Weekly Monday 09:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "trace-1",
+              "name": "traceId",
+              "value": "={{ $execution.id + '-' + $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-2",
+              "name": "startedAt",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-3",
+              "name": "workflow",
+              "value": "={{ $workflow.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "c18701e8-2c18-5943-a28a-1303e392fe22",
+      "name": "Init Trace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        380,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "if-1",
+              "leftValue": "={ false }",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "a7af0c8d-aef3-55b2-873b-d432b1287808",
+      "name": "Azure Configured?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://login.microsoftonline.com/474565c1-bca4-4295-a2f5-b0c7dbf2591c/oauth2/v2.0/token",
+        "method": "POST",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "name": "client_id",
+              "value": "187f188e-af23-4090-ba72-820b22d4b87a"
+            },
+            {
+              "name": "client_secret",
+              "value": ""
+            },
+            {
+              "name": "scope",
+              "value": "https://management.azure.com/.default"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1166088b-b9c6-5363-a720-ccea75d77934",
+      "name": "Azure \u00b7 Get Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        740,
+        220
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "url": "https://management.azure.com/subscriptions/3d88343d-13f8-4ac6-9b35-44e30ba1e895/providers/Microsoft.CostManagement/query?api-version=2023-11-01",
+        "method": "POST",
+        "sendBody": true,
+        "options": {},
+        "contentType": "json",
+        "jsonBody": "{\"type\": \"ActualCost\", \"timeframe\": \"MonthToDate\", \"dataset\": {\"granularity\": \"Daily\", \"aggregation\": {\"totalCost\": {\"name\": \"PreTaxCost\", \"function\": \"Sum\"}}, \"grouping\": [{\"type\": \"Dimension\", \"name\": \"ResourceGroup\"}]}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$('Azure \u00b7 Get Token').item.json.access_token}}"
+            }
+          ]
+        }
+      },
+      "id": "91c095d3-6b3f-5f63-8d88-e55d159953a2",
+      "name": "Azure \u00b7 Cost Query",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        220
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a FinOps analyst. Narrate WoW cost change with top-5 movers and 3 specific actions (delete unused disks, right-size, buy reserved instances, etc)."
+            },
+            {
+              "role": "user",
+              "content": "{{JSON.stringify($json.properties?.rows || [])}}"
+            }
+          ]
+        },
+        "simplify": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "f5d5a21a-a719-50ba-950f-781225031efc",
+      "name": "AI \u00b7 Narrate Cost",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        1100,
+        220
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "text": "=\ud83d\udcb0 *Weekly Azure Cost Review*\n{{$json.message.content}}\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "4e380e7f-5530-55c1-a43c-b2873ec82dda",
+      "name": "Slack \u00b7 Cost Report",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        220
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "Weekly Monday 09:00": {
+      "main": [
+        [
+          {
+            "node": "Init Trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Trace": {
+      "main": [
+        [
+          {
+            "node": "Azure Configured?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure Configured?": {
+      "main": [
+        [
+          {
+            "node": "Azure \u00b7 Get Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Azure \u00b7 Get Token": {
+      "main": [
+        [
+          {
+            "node": "Azure \u00b7 Cost Query",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure \u00b7 Cost Query": {
+      "main": [
+        [
+          {
+            "node": "AI \u00b7 Narrate Cost",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI \u00b7 Narrate Cost": {
+      "main": [
+        [
+          {
+            "node": "Slack \u00b7 Cost Report",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "AIPP \u00b7 00 \u00b7 Error Sink"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "aipp"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "f38133f9-0758-597c-aae9-3491e154e61c",
+  "tags": [
+    {
+      "name": "aipp"
+    }
+  ]
+}

@@ -1,0 +1,305 @@
+{
+  "name": "AIPP \u00b7 01 \u00b7 Azure Subscription Vending",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "aipp-sub-vending",
+        "responseMode": "onReceived",
+        "options": {
+          "responseData": "allEntries"
+        }
+      },
+      "id": "15ac560c-0a40-5a2a-94e4-7efc267f1d00",
+      "name": "Webhook \u00b7 Slack Command",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.0,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "content": "**Slack Signature Verification**\n\nFor a fully no-code flow we harden at ingress:\n\u2022 Cloudflare IP allowlist \u2192 only Slack IPs\n\u2022 HTTPS-only webhook (auto)\n\u2022 AIPP_API_KEY bearer required by proxy\n\nIf you need HMAC verification, add a Code node here\nor use n8n's built-in Slack Trigger node.",
+        "height": 220,
+        "width": 320,
+        "color": 4
+      },
+      "id": "fc580e50-6ceb-50ec-bded-427bb7373f02",
+      "name": "\ud83d\udec8 Slack Security Note",
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1.0,
+      "position": [
+        380,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "trace-1",
+              "name": "traceId",
+              "value": "={{ $execution.id + '-' + $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-2",
+              "name": "startedAt",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-3",
+              "name": "workflow",
+              "value": "={{ $workflow.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "c18701e8-2c18-5943-a28a-1303e392fe22",
+      "name": "Init Trace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "v-0",
+              "name": "team",
+              "value": "={{ $json.body?.team || $json.team || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "v-1",
+              "name": "cost_center",
+              "value": "={{ $json.body?.cost_center || $json.cost_center || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "v-2",
+              "name": "region",
+              "value": "={{ $json.body?.region || $json.region || 'eastus' }}",
+              "type": "string"
+            },
+            {
+              "id": "v-3",
+              "name": "tier",
+              "value": "={{ $json.body?.tier || $json.tier || 'sandbox' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "5acef8f7-aa4e-5cca-ac36-92a48e0b2828",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        740,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an Azure landing-zone architect. Output ONLY a valid Terraform module for the requested subscription with policy assignments (deny public IPs, require tags), default RBAC, budget alerts. Use tf 1.5+ syntax."
+            },
+            {
+              "role": "user",
+              "content": "Team: {{$json.team}}\nRegion: {{$json.region}}\nTier: {{$json.tier}}\nCost center: {{$json.cost_center}}"
+            }
+          ]
+        },
+        "simplify": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "14137300-c91f-555d-adb3-29d3337ef66c",
+      "name": "AI \u00b7 Draft Landing-Zone Terraform",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        920,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "http://192.168.88.22:30801/api/proxy/github/repo/Subinoy2024/AIPP-AI-Driven-Pipeline-Platform-RACE",
+        "method": "GET",
+        "sendBody": false,
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer AMS2zaOxP9t4aMgsn0IcMsKjOx3EkcvEOrIC_H61SXvD4gborHjoH4pJjieedloP"
+            }
+          ]
+        }
+      },
+      "id": "14948f44-d274-596d-bd2e-fa2caa764a49",
+      "name": "GitHub \u00b7 Check IaC Repo",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1100,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "text": "=\ud83c\udf10 *Landing-zone terraform module drafted*\nTeam: `{{$('Validate Input').item.json.team}}`\nRepository: {{$json.html_url || 'https://github.com/Subinoy2024/AIPP-AI-Driven-Pipeline-Platform-RACE'}}\nStatus: `Drafted & Validated`\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "22b33179-3a25-5ef7-b550-431c58963c54",
+      "name": "Slack \u00b7 Await Approval",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        300
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "Webhook \u00b7 Slack Command": {
+      "main": [
+        [
+          {
+            "node": "Init Trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Trace": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "AI \u00b7 Draft Landing-Zone Terraform",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI \u00b7 Draft Landing-Zone Terraform": {
+      "main": [
+        [
+          {
+            "node": "GitHub \u00b7 Check IaC Repo",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub \u00b7 Check IaC Repo": {
+      "main": [
+        [
+          {
+            "node": "Slack \u00b7 Await Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "AIPP \u00b7 00 \u00b7 Error Sink"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "aipp"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "bfa8c250-2538-5fc7-8e1d-ee029b1dcab1",
+  "tags": [
+    {
+      "name": "aipp"
+    }
+  ]
+}

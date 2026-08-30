@@ -1,0 +1,22 @@
+# ==============================================================================
+# AIPP — Gitleaks Security Scanner Configuration (.gitleaks.toml)
+# ==============================================================================
+title = "AIPP Gitleaks Security Scan Configuration"
+
+[allowlist]
+description = "Allowlist for local Kubernetes manifests, test mocks, and environment configuration"
+paths = [
+  '''\.env$''',
+  '''\.env\.local$''',
+  '''\.env\.n8n$''',
+  '''\.env\.example$''',
+  '''\.env\.n8n\.example$''',
+  '''k8s/secret\.yaml$''',
+  '''tests/unit/test_validators\.py$''',
+  '''backend/tests/.*\.py$''',
+  '''n8n/scripts/.*\.sh$'''
+]
+regexes = [
+  '''ghp_abcdefghij0123456789ABCDEFGHIJ0123456789''',
+  '''ghp_abcdef.*''',
+]

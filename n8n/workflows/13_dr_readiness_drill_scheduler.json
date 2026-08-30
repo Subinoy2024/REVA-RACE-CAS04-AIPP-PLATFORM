@@ -1,0 +1,572 @@
+{
+  "name": "AIPP \u00b7 13 \u00b7 DR Readiness Drill Scheduler",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 2 15 1,4,7,10 *"
+            }
+          ]
+        }
+      },
+      "id": "10e2942c-9adf-5648-a6ad-25e5c871940e",
+      "name": "Quarterly",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "trace-1",
+              "name": "traceId",
+              "value": "={{ $execution.id + '-' + $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-2",
+              "name": "startedAt",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-3",
+              "name": "workflow",
+              "value": "={{ $workflow.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "c18701e8-2c18-5943-a28a-1303e392fe22",
+      "name": "Init Trace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        380,
+        300
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "if-1",
+              "leftValue": "={ false }",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "a7af0c8d-aef3-55b2-873b-d432b1287808",
+      "name": "Azure Configured?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://login.microsoftonline.com/474565c1-bca4-4295-a2f5-b0c7dbf2591c/oauth2/v2.0/token",
+        "method": "POST",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "name": "client_id",
+              "value": "187f188e-af23-4090-ba72-820b22d4b87a"
+            },
+            {
+              "name": "client_secret",
+              "value": ""
+            },
+            {
+              "name": "scope",
+              "value": "https://management.azure.com/.default"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1166088b-b9c6-5363-a720-ccea75d77934",
+      "name": "Azure \u00b7 Get Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        740,
+        220
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "=https://management.azure.com/subscriptions/3d88343d-13f8-4ac6-9b35-44e30ba1e895/resourceGroups/rg-aipp-sre-demo/providers/Microsoft.RecoveryServices/vaults?api-version=2023-04-01",
+        "method": "GET",
+        "sendBody": false,
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$('Azure \u00b7 Get Token').item.json.access_token}}"
+            }
+          ]
+        }
+      },
+      "id": "d768ad6e-7126-5310-a9ef-7a86d0bd33d7",
+      "name": "List Recovery Vaults",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        220
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "Pick one service for a DR drill. Output ONLY a raw JSON object (no markdown). Schema: {\"service\":\"<name>\", \"plan_steps\":[\"step1\",\"step2\"], \"rto_target\":\"<duration>\", \"rpo_target\":\"<duration>\", \"abort_criteria\":\"<one line>\"}."
+            },
+            {
+              "role": "user",
+              "content": "{{JSON.stringify($json.value || [])}}"
+            }
+          ]
+        },
+        "simplify": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "5b81720d-9adf-56a2-9c3b-e6f210326f4c",
+      "name": "AI \u00b7 Plan Drill",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        1100,
+        220
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ai-parse",
+              "name": "ai",
+              "value": "={{ JSON.parse($json.message?.content || $json.content || $json.text || '{}') }}",
+              "type": "object"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "bf53a90c-beb1-5e66-8bb1-279a4dbcaaa2",
+      "name": "Parse AI Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1220,
+        220
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "jsonParameters": true,
+        "blocks": "=[{\"type\": \"header\", \"text\": {\"type\": \"plain_text\", \"text\": \"\\ud83d\\udedf  DR Drill \\u2014 Approval Needed\", \"emoji\": true}}, {\"type\": \"section\", \"text\": {\"type\": \"mrkdwn\", \"text\": \"\\u2022 *Service:*  `{{$json.ai.service || 'n/a'}}`\\n\\u2022 *RTO / RPO:*  `{{$json.ai.rto_target || 'n/a'}}` / `{{$json.ai.rpo_target || 'n/a'}}`\\n\\u2022 *Plan steps:*\\n{{($json.ai.plan_steps || []).map(s => `  \\u2022 ${s}`).join('\\\\n')}}\\n\\u2022 *Abort criteria:*  {{$json.ai.abort_criteria || 'n/a'}}\"}}, {\"type\": \"actions\", \"block_id\": \"aipp_hitl_approval\", \"elements\": [{\"type\": \"button\", \"action_id\": \"approve\", \"style\": \"primary\", \"text\": {\"type\": \"plain_text\", \"text\": \"\\u2705  Approve\", \"emoji\": true}, \"value\": \"{{$execution.resumeUrl}}\", \"confirm\": {\"title\": {\"type\": \"plain_text\", \"text\": \"Confirm approval\"}, \"text\": {\"type\": \"mrkdwn\", \"text\": \"This will resume the parked n8n execution and apply the proposed change. Continue?\"}, \"confirm\": {\"type\": \"plain_text\", \"text\": \"Yes, apply\"}, \"deny\": {\"type\": \"plain_text\", \"text\": \"Cancel\"}}}, {\"type\": \"button\", \"action_id\": \"reject\", \"style\": \"danger\", \"text\": {\"type\": \"plain_text\", \"text\": \"\\u274c  Reject\", \"emoji\": true}, \"value\": \"{{$execution.resumeUrl}}\"}]}, {\"type\": \"context\", \"elements\": [{\"type\": \"mrkdwn\", \"text\": \"Buttons require the AIPP Slack bridge \\u2014 if a click does nothing, fall back to the resume link below.\"}]}]",
+        "text": "=*\ud83d\udedf  DR Drill \u2014 Approval Needed*\n\n\u2022 *Service:*  `{{$json.ai.service || 'n/a'}}`\n\u2022 *RTO / RPO:*  `{{$json.ai.rto_target || 'n/a'}}` / `{{$json.ai.rpo_target || 'n/a'}}`\n\u2022 *Plan steps:*\n{{($json.ai.plan_steps || []).map(s => `  \u2022 ${s}`).join('\\n')}}\n\u2022 *Abort criteria:*  {{$json.ai.abort_criteria || 'n/a'}}\n\n\ud83d\udc64 *Sign-off \u2014 one click:*\n\u2022 \u2705 <{{$execution.resumeUrl}}&a=approve|APPROVE \u2014 apply the fix>\n\u2022 \u274c <{{$execution.resumeUrl}}&a=reject|REJECT \u2014 do nothing>\n_Waits up to 24h for your decision._\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "unfurlLinks": false,
+          "unfurlMedia": false
+        }
+      },
+      "id": "ede017d6-90e0-5e03-9848-d39a5ea3efd1",
+      "name": "Slack \u00b7 Ask DR Approval",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        220
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "httpMethod": "GET",
+        "responseCode": 200,
+        "responseMode": "onReceived",
+        "responseData": "Approval recorded \u2014 you can close this tab.",
+        "limitWaitTime": false,
+        "options": {}
+      },
+      "id": "22204cf7-168e-54d0-b013-9f78018295f5",
+      "name": "Wait for Approval",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1460,
+        220
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dec-1",
+              "name": "decision",
+              "value": "={{ ($json.headers?.['user-agent'] || '').toLowerCase().includes('slackbot') ? 'slackbot_ignore' : ($json.query?.a || $json.body?.a || $json.params?.a || $json.a || 'reject').toString().toLowerCase() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "12b609d3-7f51-5383-bc75-2a31571814ec",
+      "name": "Normalize Decision",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1600,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "if-eq",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "approve",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "6bbdb892-826f-5495-a664-9f0cc405aa27",
+      "name": "Approved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1640,
+        220
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "text": "=\u2705 *DR drill approved \u2014 kicking off*\nService: `{{$('Parse AI Output').item.json.ai.service || 'n/a'}}`\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "6f8df94a-c3d4-5a5e-9bea-6560f8bda008",
+      "name": "Slack \u00b7 Drill Kicked Off",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1820,
+        120
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "text": "=\u274c *DR drill rejected \u2014 no action taken*\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "5d338b96-adf3-5940-97c1-9646cdc21a91",
+      "name": "Slack \u00b7 Drill Rejected",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1820,
+        320
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "Quarterly": {
+      "main": [
+        [
+          {
+            "node": "Init Trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Trace": {
+      "main": [
+        [
+          {
+            "node": "Azure Configured?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure Configured?": {
+      "main": [
+        [
+          {
+            "node": "Azure \u00b7 Get Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Azure \u00b7 Get Token": {
+      "main": [
+        [
+          {
+            "node": "List Recovery Vaults",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "List Recovery Vaults": {
+      "main": [
+        [
+          {
+            "node": "AI \u00b7 Plan Drill",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI \u00b7 Plan Drill": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Output": {
+      "main": [
+        [
+          {
+            "node": "Slack \u00b7 Ask DR Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack \u00b7 Ask DR Approval": {
+      "main": [
+        [
+          {
+            "node": "Wait for Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Approval": {
+      "main": [
+        [
+          {
+            "node": "Normalize Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Decision": {
+      "main": [
+        [
+          {
+            "node": "Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approved?": {
+      "main": [
+        [
+          {
+            "node": "Slack \u00b7 Drill Kicked Off",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack \u00b7 Drill Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "AIPP \u00b7 00 \u00b7 Error Sink"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "aipp"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "4b3d853c-b778-5c12-bccc-eb282a8459e5",
+  "tags": [
+    {
+      "name": "aipp"
+    }
+  ]
+}

@@ -1,0 +1,185 @@
+/* ============================================================
+ * AIPP · Matrix-rain login skin
+ * ------------------------------------------------------------
+ * Shown ONLY while the user is on the login screen. The canvas
+ * is fixed to the viewport, sits behind everything, and fades
+ * out (opacity → 0) once `.aipp-locked` disappears from the app
+ * container (i.e. after successful sign-in).
+ *
+ * The login card gets a glassmorphism upgrade: translucent
+ * background, subtle green border, soft glow, and the fields
+ * inherit that palette so it reads as a cohesive "hacker
+ * terminal" rather than the default Gradio pastel.
+ * ========================================================== */
+
+/* --- Matrix rain canvas ------------------------------------ */
+#aipp-matrix-canvas {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  background: #050a0d;                     /* deep black-teal */
+  transition: opacity 900ms ease-out;
+  opacity: 1;
+}
+
+/* Faded, ghost-like "eyes" overlay behind the rain — optional
+ * decorative accent. We use a radial gradient to fake it
+ * without an image asset. */
+#aipp-matrix-canvas::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 260px 90px at 40% 45%,
+      rgba(180, 255, 200, 0.06), transparent 70%),
+    radial-gradient(ellipse 260px 90px at 60% 45%,
+      rgba(180, 255, 200, 0.06), transparent 70%);
+  mix-blend-mode: screen;
+}
+
+/* When the app container loses `.aipp-locked` (post-login), we
+ * dim the rain to a near-invisible ambient shimmer so the app
+ * content is fully readable. */
+body[data-aipp-authed="1"] #aipp-matrix-canvas {
+  opacity: 0.02;
+}
+
+/* --- Login card glassmorphism ------------------------------ */
+/* IMPORTANT: also force the outer Gradio container to be transparent
+ * so the Matrix-rain canvas (inserted as body's first child) is not
+ * hidden by `.gradio-container`'s own opaque gradient background.
+ * We keep the .gradio-container's grid-noise ::before layer intact
+ * because at low z-index it merely tints the rain — nice effect.
+ * Post-login we restore the previous gradient at reduced opacity via
+ * the body[data-aipp-authed="1"] selector further down. */
+.gradio-container {
+  background: transparent !important;
+}
+.gradio-container::before {
+  opacity: 0.35;                          /* soften the grid overlay */
+}
+body[data-aipp-authed="1"] .gradio-container {
+  /* After sign-in restore the AIPP dashboard gradient at full opacity
+   * so the app content is readable. The (near-invisible) rain sits
+   * behind as a subtle ambient shimmer. */
+  background:
+    radial-gradient(ellipse 90% 55% at 50% -10%, rgba(37, 99, 235, 0.28), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 100% 0%, rgba(77, 196, 255, 0.18), transparent 60%),
+    radial-gradient(ellipse 60% 40% at 0% 100%, rgba(96, 165, 250, 0.14), transparent 60%),
+    linear-gradient(180deg, rgb(6, 14, 26) 0%, rgb(8, 12, 22) 45%, rgb(10, 14, 24) 100%) !important;
+}
+
+#login-group {
+  position: relative;
+  z-index: 2;
+  max-width: 480px;
+  margin: 8vh auto 0 auto;
+  padding: 32px 28px 24px 28px;
+  background: rgba(6, 14, 20, 0.72);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(90, 255, 170, 0.32);
+  border-radius: 18px;
+  box-shadow:
+    0 0 0 1px rgba(90, 255, 170, 0.10) inset,
+    0 24px 60px rgba(0, 0, 0, 0.55),
+    0 0 90px rgba(90, 255, 170, 0.12);
+  color: #cfe8d9;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+}
+
+/* Title inside the login card */
+#login-group h1,
+#login-group h2,
+#login-group h3 {
+  color: #a0ffcf;
+  text-shadow: 0 0 12px rgba(90, 255, 170, 0.35);
+  letter-spacing: 0.02em;
+}
+
+/* Inputs — terminal look */
+#login-group input[type="text"],
+#login-group input[type="password"],
+#login-group input[type="email"],
+#login-group textarea {
+  background: rgba(2, 8, 12, 0.75) !important;
+  color: #d9ffe8 !important;
+  border: 1px solid rgba(90, 255, 170, 0.28) !important;
+  border-radius: 10px !important;
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  caret-color: #a0ffcf;
+}
+#login-group input:focus,
+#login-group textarea:focus {
+  border-color: rgba(90, 255, 170, 0.7) !important;
+  box-shadow: 0 0 0 3px rgba(90, 255, 170, 0.15) !important;
+  outline: none !important;
+}
+
+/* Labels above inputs */
+#login-group label,
+#login-group .label-wrap {
+  color: #7fe0af !important;
+  font-family: "JetBrains Mono", ui-monospace, monospace !important;
+  font-size: 12px !important;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Primary sign-in button */
+#login-btn {
+  background: linear-gradient(120deg, #12b981, #0aa3ff) !important;
+  color: #05141a !important;
+  border: none !important;
+  font-weight: 700 !important;
+  letter-spacing: 0.06em;
+  box-shadow: 0 0 20px rgba(90, 255, 170, 0.35);
+  transition: transform 120ms ease, box-shadow 200ms ease;
+}
+#login-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 0 32px rgba(90, 255, 170, 0.55);
+}
+
+/* SSO buttons row */
+.aipp-sso-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  margin-top: 10px;
+}
+.aipp-sso-btn {
+  background: linear-gradient(120deg, #a891ff, #7ec8ff) !important;
+}
+
+/* Login message strip */
+#login-msg {
+  color: #ffd88a;
+  font-family: "JetBrains Mono", ui-monospace, monospace;
+  font-size: 13px;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* Password-reset accordion header inside login card */
+#login-group .accordion-header,
+#login-group [class*="accordion"] > button {
+  color: #a0ffcf !important;
+}
+
+/* When the app is unlocked we hide the login card completely
+ * (existing rule from aipp_theme.css already does the reverse
+ * for `.aipp-locked` — this pair is symmetric). */
+body[data-aipp-authed="1"] #login-group {
+  display: none;
+}
+
+/* Make the main app container float above the (now dim) rain */
+#app-group {
+  position: relative;
+  z-index: 1;
+}

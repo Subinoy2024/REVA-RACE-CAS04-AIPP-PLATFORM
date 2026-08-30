@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: aipp-config
+  namespace: aipp
+  labels:
+    app.kubernetes.io/name: aipp-config
+    app.kubernetes.io/part-of: aipp-platform
+data:
+  LLM_PROVIDER: "openai"
+  LLM_MODEL: "gpt-4o-mini"
+  AIPP_PUBLIC_URL: "https://aipp.dccloud.in.net"
+  AIPP_BACKEND_PUBLIC_URL: "https://api-aipp.dccloud.in.net"
+  AIPP_LOCAL_URL: "http://aipp.dccloud.com"
+  AIPP_LOCAL_BACKEND_URL: "http://api-aipp.dccloud.com"
+  AIPP_INTERNAL_BACKEND_URL: "http://aipp-backend.aipp.svc.cluster.local:8001"
+  PORT: "3000"
+  CORS_ORIGINS: "*"
+  OIDC_PROVIDER: "off"

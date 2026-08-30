@@ -1,0 +1,279 @@
+{
+  "name": "AIPP \u00b7 02 \u00b7 IaC Drift Detector",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 3 * * *"
+            }
+          ]
+        }
+      },
+      "id": "93827f73-0440-5373-8c07-1a2d3f8cb414",
+      "name": "Daily 03:00",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "trace-1",
+              "name": "traceId",
+              "value": "={{ $execution.id + '-' + $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-2",
+              "name": "startedAt",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-3",
+              "name": "workflow",
+              "value": "={{ $workflow.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "c18701e8-2c18-5943-a28a-1303e392fe22",
+      "name": "Init Trace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        380,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://192.168.88.22:30801/api/proxy/github/tree/Subinoy2024/AIPP-AI-Driven-Pipeline-Platform-RACE",
+        "method": "GET",
+        "sendBody": false,
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer AMS2zaOxP9t4aMgsn0IcMsKjOx3EkcvEOrIC_H61SXvD4gborHjoH4pJjieedloP"
+            }
+          ]
+        }
+      },
+      "id": "f0010394-1096-5850-85c7-8285ba8dbc8c",
+      "name": "GitHub \u00b7 List .tf files",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "tf-1",
+              "name": "count",
+              "value": "={{ ($json.tree || []).filter(i => (i.path || '').endsWith('.tf')).length }}",
+              "type": "number"
+            },
+            {
+              "id": "tf-2",
+              "name": "files",
+              "value": "={{ ($json.tree || []).filter(i => (i.path || '').endsWith('.tf')).slice(0, 20).map(f => f.path) }}",
+              "type": "array"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "id": "be9ac444-ffee-5c5c-b47d-aaafac7c035b",
+      "name": "Filter .tf paths",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        740,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You review Terraform file lists for drift indicators. Output JSON: {summary, severity(low|med|high), risk_files[], recommended_action(reconcile|absorb|investigate)}. If file count is 0, severity=low, action=investigate."
+            },
+            {
+              "role": "user",
+              "content": "Repo: Subinoy2024/AIPP-AI-Driven-Pipeline-Platform-RACE\nFile count: {{$json.count}}\nFiles: {{JSON.stringify($json.files)}}"
+            }
+          ]
+        },
+        "simplify": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "c4c46080-4c93-5a89-b3d9-aaa4da46f682",
+      "name": "AI \u00b7 Analyse Drift Signals",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        920,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "text": "=\ud83c\udf31 *IaC Drift Check* \u2014 severity: `{{$json.severity}}`\n{{$json.summary}}\n\nRecommended: `{{$json.recommended_action}}`\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "94556f67-3c02-583c-a89a-937559832de2",
+      "name": "Slack \u00b7 Drift Card",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1100,
+        300
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "Daily 03:00": {
+      "main": [
+        [
+          {
+            "node": "Init Trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Trace": {
+      "main": [
+        [
+          {
+            "node": "GitHub \u00b7 List .tf files",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub \u00b7 List .tf files": {
+      "main": [
+        [
+          {
+            "node": "Filter .tf paths",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Filter .tf paths": {
+      "main": [
+        [
+          {
+            "node": "AI \u00b7 Analyse Drift Signals",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI \u00b7 Analyse Drift Signals": {
+      "main": [
+        [
+          {
+            "node": "Slack \u00b7 Drift Card",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "AIPP \u00b7 00 \u00b7 Error Sink"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "aipp"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "a4f969cd-2f62-5fc7-b5a2-77916e91017c",
+  "tags": [
+    {
+      "name": "aipp"
+    }
+  ]
+}

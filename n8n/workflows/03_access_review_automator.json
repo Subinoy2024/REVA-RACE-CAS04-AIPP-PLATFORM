@@ -1,0 +1,237 @@
+{
+  "name": "AIPP \u00b7 03 \u00b7 Access Review Automator",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 9 1 1,4,7,10 *"
+            }
+          ]
+        }
+      },
+      "id": "10e2942c-9adf-5648-a6ad-25e5c871940e",
+      "name": "Quarterly",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "trace-1",
+              "name": "traceId",
+              "value": "={{ $execution.id + '-' + $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-2",
+              "name": "startedAt",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-3",
+              "name": "workflow",
+              "value": "={{ $workflow.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "c18701e8-2c18-5943-a28a-1303e392fe22",
+      "name": "Init Trace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        380,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://192.168.88.22:30801/api/proxy/github/org/Subinoy2024/members",
+        "method": "GET",
+        "sendBody": false,
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer AMS2zaOxP9t4aMgsn0IcMsKjOx3EkcvEOrIC_H61SXvD4gborHjoH4pJjieedloP"
+            }
+          ]
+        }
+      },
+      "id": "98a2760a-90a5-5384-b498-5a42f145c631",
+      "name": "GitHub \u00b7 List Org Members",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an access-review auditor. From the org members list output JSON: {dormant:[], risky_admins:[], normal:[]}. Dormant = no public activity > 90 days. If input is empty, return all three as empty arrays."
+            },
+            {
+              "role": "user",
+              "content": "{{JSON.stringify($json)}}"
+            }
+          ]
+        },
+        "simplify": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "f9aa18f1-8af4-5083-a91d-451c761b9d9b",
+      "name": "AI \u00b7 Rank Access Risk",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        740,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "text": "=\ud83d\udd10 *Quarterly Access Review*\n\u2022 Dormant: `{{$json.dormant.length}}`\n\u2022 Risky admins: `{{$json.risky_admins.length}}`\nReply `revoke <username>` in thread to remove access.\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "b94b0470-31bf-5119-8f83-006845738973",
+      "name": "Slack \u00b7 Manager Digest",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        920,
+        300
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "Quarterly": {
+      "main": [
+        [
+          {
+            "node": "Init Trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Trace": {
+      "main": [
+        [
+          {
+            "node": "GitHub \u00b7 List Org Members",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub \u00b7 List Org Members": {
+      "main": [
+        [
+          {
+            "node": "AI \u00b7 Rank Access Risk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI \u00b7 Rank Access Risk": {
+      "main": [
+        [
+          {
+            "node": "Slack \u00b7 Manager Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "AIPP \u00b7 00 \u00b7 Error Sink"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "aipp"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "b92e105d-41bb-5048-8476-3f12a9d32ec9",
+  "tags": [
+    {
+      "name": "aipp"
+    }
+  ]
+}

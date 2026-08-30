@@ -1,0 +1,8 @@
+"""Sample input for `python -m tests.research.run_batch --input tests/research/repos.sample.csv --variant all`
+Populate github_pat before running. Keep this file OUT of version control if you edit real PATs.
+"""
+
+# repo_url,branch,github_pat,ci_platform,cloud_platform,custom_requirement
+# https://github.com/pallets/flask,main,ghp_REPLACEME,github_actions,aws,SonarQube gate
+# https://github.com/tiangolo/fastapi,master,ghp_REPLACEME,github_actions,azure,manual prod approval
+# https://github.com/gohugoio/hugo,master,ghp_REPLACEME,gitlab_ci,gcp,Trivy + Cosign

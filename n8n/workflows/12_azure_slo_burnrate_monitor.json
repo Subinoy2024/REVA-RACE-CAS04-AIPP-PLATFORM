@@ -1,0 +1,329 @@
+{
+  "name": "AIPP \u00b7 12 \u00b7 Azure SLO Burn-Rate Monitor",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/5 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "9ab20c00-4bf7-5d2e-8041-67442eab120b",
+      "name": "Every 5 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "trace-1",
+              "name": "traceId",
+              "value": "={{ $execution.id + '-' + $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-2",
+              "name": "startedAt",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-3",
+              "name": "workflow",
+              "value": "={{ $workflow.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "c18701e8-2c18-5943-a28a-1303e392fe22",
+      "name": "Init Trace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        380,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "if-1",
+              "leftValue": "={ false }",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "a7af0c8d-aef3-55b2-873b-d432b1287808",
+      "name": "Azure Configured?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "https://login.microsoftonline.com/474565c1-bca4-4295-a2f5-b0c7dbf2591c/oauth2/v2.0/token",
+        "method": "POST",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "name": "client_id",
+              "value": "187f188e-af23-4090-ba72-820b22d4b87a"
+            },
+            {
+              "name": "client_secret",
+              "value": ""
+            },
+            {
+              "name": "scope",
+              "value": "https://management.azure.com/.default"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1166088b-b9c6-5363-a720-ccea75d77934",
+      "name": "Azure \u00b7 Get Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        740,
+        220
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "url": "https://management.azure.com/subscriptions/3d88343d-13f8-4ac6-9b35-44e30ba1e895/resourceGroups/rg-aipp-sre-demo/providers/microsoft.insights/metrics?api-version=2018-01-01&metricnames=FailedRequests",
+        "method": "GET",
+        "sendBody": false,
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$('Azure \u00b7 Get Token').item.json.access_token}}"
+            }
+          ]
+        }
+      },
+      "id": "d78042ed-fa50-5517-bbdc-ee32a54db3c0",
+      "name": "Azure Monitor \u00b7 Query Metric",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        220
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "Given error-budget burn (fast: 1h window, slow: 6h), decide: page (fast > 14.4x), ticket (slow > 6x), silent. Output JSON: {decision, burn_fast, burn_slow, reason}."
+            },
+            {
+              "role": "user",
+              "content": "{{JSON.stringify($json)}}"
+            }
+          ]
+        },
+        "simplify": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "9a27f594-920c-5d87-971b-ca3317dc1dda",
+      "name": "AI \u00b7 Burn Rate Decision",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        1100,
+        220
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "text": "=\ud83d\udd25 *SLO Burn Decision: `{{$json.decision}}`*\n\u2022 Fast: `{{$json.burn_fast}}x` \u00b7 Slow: `{{$json.burn_slow}}x`\n{{$json.reason}}\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "4df2b51e-a1fb-5f39-bf83-d7717ccb10c8",
+      "name": "Slack \u00b7 SLO Alert",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        220
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "Every 5 min": {
+      "main": [
+        [
+          {
+            "node": "Init Trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Trace": {
+      "main": [
+        [
+          {
+            "node": "Azure Configured?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure Configured?": {
+      "main": [
+        [
+          {
+            "node": "Azure \u00b7 Get Token",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        []
+      ]
+    },
+    "Azure \u00b7 Get Token": {
+      "main": [
+        [
+          {
+            "node": "Azure Monitor \u00b7 Query Metric",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure Monitor \u00b7 Query Metric": {
+      "main": [
+        [
+          {
+            "node": "AI \u00b7 Burn Rate Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI \u00b7 Burn Rate Decision": {
+      "main": [
+        [
+          {
+            "node": "Slack \u00b7 SLO Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "AIPP \u00b7 00 \u00b7 Error Sink"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "aipp"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "b95882b3-0dd0-5621-a0e1-cc9b4d3f39c1",
+  "tags": [
+    {
+      "name": "aipp"
+    }
+  ]
+}

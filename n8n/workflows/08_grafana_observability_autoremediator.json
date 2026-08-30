@@ -1,0 +1,483 @@
+{
+  "name": "AIPP \u00b7 08 \u00b7 Grafana Observability Auto-Remediator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "aipp-grafana",
+        "responseMode": "onReceived",
+        "options": {
+          "responseData": "allEntries"
+        }
+      },
+      "id": "7c95ea15-0074-5ef5-98d1-9ad31460b250",
+      "name": "Grafana \u00b7 Alert Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.0,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "trace-1",
+              "name": "traceId",
+              "value": "={{ $execution.id + '-' + $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-2",
+              "name": "startedAt",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-3",
+              "name": "workflow",
+              "value": "={{ $workflow.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "c18701e8-2c18-5943-a28a-1303e392fe22",
+      "name": "Init Trace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        380,
+        300
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ex-1",
+              "name": "metric",
+              "value": "={{ ($json.body?.commonLabels?.alertname || $json.commonLabels?.alertname || $json.alertname || 'unknown') }}",
+              "type": "string"
+            },
+            {
+              "id": "ex-2",
+              "name": "target",
+              "value": "={{ ($json.body?.commonLabels?.instance || $json.commonLabels?.instance || $json.instance || 'unknown') }}",
+              "type": "string"
+            },
+            {
+              "id": "ex-3",
+              "name": "value",
+              "value": "={{ ($json.body?.commonAnnotations?.value || $json.commonAnnotations?.value || $json.value || 'n/a') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "cd023a87-8864-5071-938a-52a8f271f775",
+      "name": "Extract Alert",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        560,
+        300
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are an SRE. Given a metric alert, pick ONE safe remediation. Output ONLY a raw JSON object (no markdown, no prose). Schema: {\"action\":\"restart_pod|scale_hpa|clear_cache|expand_pvc|escalate\", \"kubectl_cmd\":\"<one command>\", \"reason\":\"<one line>\", \"risk\":\"low|med|high\"}."
+            },
+            {
+              "role": "user",
+              "content": "Metric: {{$json.metric}}\nTarget: {{$json.target}}\nValue: {{$json.value}}"
+            }
+          ]
+        },
+        "simplify": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "5d2dd234-b0f7-5294-b404-dd16a7978e38",
+      "name": "AI \u00b7 Choose Remediation",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        740,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ai-parse",
+              "name": "ai",
+              "value": "={{ JSON.parse($json.message?.content || $json.content || $json.text || '{}') }}",
+              "type": "object"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "bf53a90c-beb1-5e66-8bb1-279a4dbcaaa2",
+      "name": "Parse AI Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        860,
+        300
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "jsonParameters": true,
+        "blocks": "=[{\"type\": \"header\", \"text\": {\"type\": \"plain_text\", \"text\": \"\\ud83d\\udea8  Alert Remediation \\u2014 Approval Needed\", \"emoji\": true}}, {\"type\": \"section\", \"text\": {\"type\": \"mrkdwn\", \"text\": \"*Alert:*  `{{$('Extract Alert').item.json.metric}}` on `{{$('Extract Alert').item.json.target}}`\\n\\u2022 *AI proposes:*  `{{$json.ai.action || 'n/a'}}` (risk `{{$json.ai.risk || 'n/a'}}`)\\n\\u2022 *Reason:*  {{$json.ai.reason || 'n/a'}}\\n\\u2022 *Command:*  `{{$json.ai.kubectl_cmd || 'n/a'}}`\"}}, {\"type\": \"actions\", \"block_id\": \"aipp_hitl_approval\", \"elements\": [{\"type\": \"button\", \"action_id\": \"approve\", \"style\": \"primary\", \"text\": {\"type\": \"plain_text\", \"text\": \"\\u2705  Approve\", \"emoji\": true}, \"value\": \"{{$execution.resumeUrl}}\", \"confirm\": {\"title\": {\"type\": \"plain_text\", \"text\": \"Confirm approval\"}, \"text\": {\"type\": \"mrkdwn\", \"text\": \"This will resume the parked n8n execution and apply the proposed change. Continue?\"}, \"confirm\": {\"type\": \"plain_text\", \"text\": \"Yes, apply\"}, \"deny\": {\"type\": \"plain_text\", \"text\": \"Cancel\"}}}, {\"type\": \"button\", \"action_id\": \"reject\", \"style\": \"danger\", \"text\": {\"type\": \"plain_text\", \"text\": \"\\u274c  Reject\", \"emoji\": true}, \"value\": \"{{$execution.resumeUrl}}\"}]}, {\"type\": \"context\", \"elements\": [{\"type\": \"mrkdwn\", \"text\": \"Buttons require the AIPP Slack bridge \\u2014 if a click does nothing, fall back to the resume link below.\"}]}]",
+        "text": "=*\ud83d\udea8  Alert Remediation \u2014 Approval Needed*\n\n*Alert:*  `{{$('Extract Alert').item.json.metric}}` on `{{$('Extract Alert').item.json.target}}`\n\u2022 *AI proposes:*  `{{$json.ai.action || 'n/a'}}` (risk `{{$json.ai.risk || 'n/a'}}`)\n\u2022 *Reason:*  {{$json.ai.reason || 'n/a'}}\n\u2022 *Command:*  `{{$json.ai.kubectl_cmd || 'n/a'}}`\n\n\ud83d\udc64 *Sign-off \u2014 one click:*\n\u2022 \u2705 <{{$execution.resumeUrl}}&a=approve|APPROVE \u2014 apply the fix>\n\u2022 \u274c <{{$execution.resumeUrl}}&a=reject|REJECT \u2014 do nothing>\n_Waits up to 24h for your decision._\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "unfurlLinks": false,
+          "unfurlMedia": false
+        }
+      },
+      "id": "810fb2fe-fec2-5b83-a90d-e55d3dff76f8",
+      "name": "Slack \u00b7 Ask Remediation Approval",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        920,
+        300
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "httpMethod": "GET",
+        "responseCode": 200,
+        "responseMode": "onReceived",
+        "responseData": "Approval recorded \u2014 you can close this tab.",
+        "limitWaitTime": false,
+        "options": {}
+      },
+      "id": "22204cf7-168e-54d0-b013-9f78018295f5",
+      "name": "Wait for Approval",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1100,
+        300
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dec-1",
+              "name": "decision",
+              "value": "={{ ($json.headers?.['user-agent'] || '').toLowerCase().includes('slackbot') ? 'slackbot_ignore' : ($json.query?.a || $json.body?.a || $json.params?.a || $json.a || 'reject').toString().toLowerCase() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "12b609d3-7f51-5383-bc75-2a31571814ec",
+      "name": "Normalize Decision",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1240,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "if-eq",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "approve",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "6bbdb892-826f-5495-a664-9f0cc405aa27",
+      "name": "Approved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "text": "=\u2705 *Remediation approved & recorded*\nAlert: `{{$('Extract Alert').item.json.metric}}` \u2192 action `{{$('Parse AI Output').item.json.ai.action || 'n/a'}}`\n```\n{{$('Parse AI Output').item.json.ai.kubectl_cmd || 'n/a'}}\n```\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "692d6f5c-e1a1-51bc-a3bd-f5fe8248e392",
+      "name": "Slack \u00b7 Remediation Applied",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1460,
+        200
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "text": "=\u274c *Auto-remediation rejected \u2014 alert escalated to on-call*\nAlert: `{{$('Extract Alert').item.json.metric}}`\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "42b11ffd-4a95-574d-a5ca-ea093114d0c3",
+      "name": "Slack \u00b7 Remediation Rejected",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1460,
+        400
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "Grafana \u00b7 Alert Webhook": {
+      "main": [
+        [
+          {
+            "node": "Init Trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Trace": {
+      "main": [
+        [
+          {
+            "node": "Extract Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Alert": {
+      "main": [
+        [
+          {
+            "node": "AI \u00b7 Choose Remediation",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI \u00b7 Choose Remediation": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Output": {
+      "main": [
+        [
+          {
+            "node": "Slack \u00b7 Ask Remediation Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack \u00b7 Ask Remediation Approval": {
+      "main": [
+        [
+          {
+            "node": "Wait for Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Approval": {
+      "main": [
+        [
+          {
+            "node": "Normalize Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Decision": {
+      "main": [
+        [
+          {
+            "node": "Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approved?": {
+      "main": [
+        [
+          {
+            "node": "Slack \u00b7 Remediation Applied",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack \u00b7 Remediation Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "AIPP \u00b7 00 \u00b7 Error Sink"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "aipp"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "df96dc90-8afd-55f9-9290-70fd1dac0bfc",
+  "tags": [
+    {
+      "name": "aipp"
+    }
+  ]
+}

@@ -1,0 +1,45 @@
+repo_url,branch,github_pat,ci_platform,cloud_platform,custom_requirement
+# --- 22-repo AIPP thesis evaluation corpus ---
+# Copy this file to `repos.curated.csv`, replace GHP_TOKEN with your real
+# GitHub PAT (repo scope is enough), and run:
+#   python -m tests.research.run_batch --input tests/research/repos.curated.csv --variant aipp
+#   python -m tests.research.aggregate --db-out tests/research/results/
+#
+# Coverage matrix: 22 real public repositories across
+#   - languages: Python, JavaScript/TypeScript, Go, Java, C#, Ruby, PHP, Rust
+#   - frameworks: Flask, FastAPI, Django, Express, Nest, Spring, .NET, Rails, Hugo
+#   - architectures: monolith, microservices, serverless, static site
+#   - across 5 CI platforms and 3 clouds
+# --- Python ---
+https://github.com/pallets/flask,main,GHP_TOKEN,github_actions,aws,include SonarQube + Bandit
+https://github.com/tiangolo/fastapi,master,GHP_TOKEN,azure_devops,azure,require manual approval for production
+https://github.com/django/django,main,GHP_TOKEN,gitlab_ci,gcp,use Trivy image scan and Cosign signing
+https://github.com/psf/requests,main,GHP_TOKEN,github_actions,aws,library — CI only no deploy
+# --- JavaScript / TypeScript ---
+https://github.com/expressjs/express,master,GHP_TOKEN,github_actions,aws,ECS Fargate deploy with blue-green strategy
+https://github.com/nestjs/nest,master,GHP_TOKEN,azure_devops,azure,AKS + Helm deploy
+https://github.com/reduxjs/redux,master,GHP_TOKEN,github_actions,gcp,static SPA — publish to GCS bucket
+https://github.com/vercel/next.js,canary,GHP_TOKEN,harness,aws,include Snyk SAST
+# --- Go ---
+https://github.com/gohugoio/hugo,master,GHP_TOKEN,gitlab_ci,gcp,static site — GCS + Cloud CDN
+https://github.com/gin-gonic/gin,master,GHP_TOKEN,github_actions,aws,Lambda deploy via SAM
+https://github.com/prometheus/prometheus,main,GHP_TOKEN,tekton,gcp,GKE + Helm with canary
+# --- Java ---
+https://github.com/spring-projects/spring-boot,main,GHP_TOKEN,azure_devops,azure,App Service Web App for containers
+https://github.com/apache/kafka,trunk,GHP_TOKEN,gitlab_ci,aws,EKS + Helm — production-grade
+# --- C# / .NET ---
+https://github.com/dotnet/aspnetcore,main,GHP_TOKEN,azure_devops,azure,Azure Functions serverless
+# --- Ruby ---
+https://github.com/rails/rails,main,GHP_TOKEN,github_actions,aws,ECS Fargate + RDS migrations
+# --- PHP ---
+https://github.com/laravel/laravel,11.x,GHP_TOKEN,gitlab_ci,gcp,Cloud Run with Cloud SQL
+# --- Rust ---
+https://github.com/tokio-rs/tokio,master,GHP_TOKEN,github_actions,aws,library — CI only
+# --- Serverless / infra-heavy ---
+https://github.com/serverless/examples,master,GHP_TOKEN,github_actions,aws,Lambda + API Gateway
+# --- Microservices demos ---
+https://github.com/GoogleCloudPlatform/microservices-demo,main,GHP_TOKEN,tekton,gcp,GKE microservices with Istio
+https://github.com/dotnet-architecture/eShopOnContainers,dev,GHP_TOKEN,azure_devops,azure,AKS microservices
+# --- Infra-only pipeline tests ---
+https://github.com/hashicorp/terraform,main,GHP_TOKEN,github_actions,aws,PIPELINE TYPE: INFRA-ONLY — Terraform apply
+https://github.com/GoogleCloudPlatform/cloud-foundation-fabric,master,GHP_TOKEN,github_actions,gcp,PIPELINE TYPE: INFRA-ONLY — Terraform on GCP

@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: aipp
+  labels:
+    app.kubernetes.io/name: aipp
+    app.kubernetes.io/part-of: aipp-platform

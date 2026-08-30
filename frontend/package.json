@@ -1,0 +1,9 @@
+{
+  "name": "aipp-gradio-launcher",
+  "version": "0.2.0",
+  "private": true,
+  "description": "Thin yarn shim that supervisor uses to launch the AIPP Gradio Python app.",
+  "scripts": {
+    "start": "/root/.venv/bin/python3 -u gradio_app.py"
+  }
+}

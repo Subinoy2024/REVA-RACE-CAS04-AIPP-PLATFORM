@@ -1,0 +1,391 @@
+{
+  "name": "AIPP \u00b7 11 \u00b7 SOP / Runbook Generator",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "aipp-sop",
+        "responseMode": "onReceived",
+        "options": {
+          "responseData": "allEntries"
+        }
+      },
+      "id": "5c0bba6b-c146-5baf-8620-60342317daaa",
+      "name": "AIPP \u00b7 Incident Closed Hook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.0,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "trace-1",
+              "name": "traceId",
+              "value": "={{ $execution.id + '-' + $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-2",
+              "name": "startedAt",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-3",
+              "name": "workflow",
+              "value": "={{ $workflow.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "c18701e8-2c18-5943-a28a-1303e392fe22",
+      "name": "Init Trace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        380,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "sop-1",
+              "name": "incident_id",
+              "value": "={{ ($json.body?.incident_id || $json.incident_id || $json.body?.commonLabels?.alertname || 'INC-88392') }}",
+              "type": "string"
+            },
+            {
+              "id": "sop-2",
+              "name": "incident_title",
+              "value": "={{ ($json.body?.incident_title || $json.body?.title || $json.body?.commonAnnotations?.summary || $json.body?.commonLabels?.alertname || 'PostgreSQL Connection Pool Exhaustion & Outage') }}",
+              "type": "string"
+            },
+            {
+              "id": "sop-3",
+              "name": "severity",
+              "value": "={{ ($json.body?.severity || $json.body?.commonLabels?.severity || 'CRITICAL').toUpperCase() }}",
+              "type": "string"
+            },
+            {
+              "id": "sop-4",
+              "name": "affected_service",
+              "value": "={{ ($json.body?.affected_service || $json.body?.commonLabels?.pod || $json.body?.commonLabels?.instance || $json.body?.service || 'AIPP Backend API / PostgreSQL Cluster') }}",
+              "type": "string"
+            },
+            {
+              "id": "sop-5",
+              "name": "rca_summary",
+              "value": "={{ ($json.body?.rca_summary || $json.body?.commonAnnotations?.summary || 'Database connection pool exhaustion under peak load') }}",
+              "type": "string"
+            },
+            {
+              "id": "sop-6",
+              "name": "timeline",
+              "value": "={{ ($json.body?.timeline || 'T0 14:10 Alert Fired -> T1 14:15 Triage -> T2 14:35 Pool Scaled -> T3 14:52 Mitigated') }}",
+              "type": "string"
+            },
+            {
+              "id": "sop-7",
+              "name": "should_generate_sop",
+              "value": "={{ ($json.body?.generate_sop === true || ($json.body?.severity || $json.body?.commonLabels?.severity || 'CRITICAL').toLowerCase().includes('crit') || ($json.body?.severity || '').toLowerCase().includes('sev1') || ($json.body?.severity || '').toLowerCase().includes('p1') || $json.body?.trigger_type === 'incident_closed' || (!$json.body?.severity && !$json.body?.commonLabels?.severity)) ? 'true' : 'false' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "8df0bce0-c27d-5610-baa8-8f6d41ff5568",
+      "name": "Extract Incident Context",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "if-eq",
+              "leftValue": "={{ $json.should_generate_sop }}",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "6af1d18e-e047-5d0b-aa42-30af73a52198",
+      "name": "Critical or Closed?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        740,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://192.168.88.22:30801/api/workflows/rca/docx",
+        "method": "POST",
+        "sendBody": true,
+        "options": {},
+        "contentType": "json",
+        "jsonBody": "{\"incident_id\": \"={{ $('Extract Incident Context').item.json.incident_id }}\", \"title\": \"={{ $('Extract Incident Context').item.json.incident_title }}\", \"affected_service\": \"={{ $('Extract Incident Context').item.json.affected_service }}\", \"severity\": \"={{ $('Extract Incident Context').item.json.severity }}\", \"summary\": \"={{ $('Extract Incident Context').item.json.rca_summary }}\"}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer AMS2zaOxP9t4aMgsn0IcMsKjOx3EkcvEOrIC_H61SXvD4gborHjoH4pJjieedloP"
+            }
+          ]
+        }
+      },
+      "id": "14d08191-76d8-526b-9bd8-1436e164dab1",
+      "name": "Generate .DOCX Runbook",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You draft enterprise SRE runbooks and post-mortems. Structure: 1. Symptom & Metric Trigger, 2. Diagnosis Steps (with exact CLI commands), 3. Fix & Mitigation (with rollback steps), 4. Long-term Prevention. Markdown only."
+            },
+            {
+              "role": "user",
+              "content": "Incident ID: {{$('Extract Incident Context').item.json.incident_id}}\nTitle: {{$('Extract Incident Context').item.json.incident_title}}\nSeverity: {{$('Extract Incident Context').item.json.severity}}\nImpacted Service: {{$('Extract Incident Context').item.json.affected_service}}\nRCA: {{$('Extract Incident Context').item.json.rca_summary}}\nTimeline: {{$('Extract Incident Context').item.json.timeline}}"
+            }
+          ]
+        },
+        "simplify": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "717eb763-d005-5918-9a56-5851c4e70605",
+      "name": "AI \u00b7 Draft Runbook",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        1100,
+        200
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "text": "=\ud83d\udcd8 *SRE Runbook & RCA (.DOCX) Generated for incident `{{$('Extract Incident Context').item.json.incident_id}}`*\n\n\u2022 *Incident Topic:* `{{$('Extract Incident Context').item.json.incident_title}}`\n\u2022 *Affected Service:* `{{$('Extract Incident Context').item.json.affected_service}}`\n\u2022 *Severity:* `{{$('Extract Incident Context').item.json.severity}}`\n\u2022 *Root Cause:* `{{$('Extract Incident Context').item.json.rca_summary}}`\n\n\ud83d\udcc4 *Microsoft Word File Generated:* `docs/Incident_PostMortem_RCA_{{$('Extract Incident Context').item.json.incident_id}}.docx`\n\ud83d\udd17 *Download Link:* `/docs/Incident_PostMortem_RCA_{{$('Extract Incident Context').item.json.incident_id}}.docx`\n\nPreview:\n{{$json.message.content}}\n\nReply `publish` to push to Wiki.\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "ca8709a8-77cd-55a0-9669-c78b67bc5b50",
+      "name": "Slack \u00b7 Review Runbook",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        200
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "text": "=\u2139\ufe0f *Alert Recorded \u2014 SOP Generation Skipped*\n\n\u2022 *Alert Topic:* `{{$('Extract Incident Context').item.json.incident_title}}`\n\u2022 *Affected Service:* `{{$('Extract Incident Context').item.json.affected_service}}`\n\u2022 *Severity:* `{{$('Extract Incident Context').item.json.severity}}` (Non-Critical)\n\n_Note: SRE Post-Mortem & SOP runbooks are automatically generated only for P1/Critical incidents or upon incident closure to avoid document fatigue._\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "d46d13e3-274f-5b71-a334-9c7c540bffc8",
+      "name": "Slack \u00b7 Low Severity Alert Recorded",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        920,
+        420
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "AIPP \u00b7 Incident Closed Hook": {
+      "main": [
+        [
+          {
+            "node": "Init Trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Trace": {
+      "main": [
+        [
+          {
+            "node": "Extract Incident Context",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Incident Context": {
+      "main": [
+        [
+          {
+            "node": "Critical or Closed?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Critical or Closed?": {
+      "main": [
+        [
+          {
+            "node": "Generate .DOCX Runbook",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack \u00b7 Low Severity Alert Recorded",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Generate .DOCX Runbook": {
+      "main": [
+        [
+          {
+            "node": "AI \u00b7 Draft Runbook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI \u00b7 Draft Runbook": {
+      "main": [
+        [
+          {
+            "node": "Slack \u00b7 Review Runbook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "AIPP \u00b7 00 \u00b7 Error Sink"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "aipp"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "77da1b22-cce3-5ea8-87b8-72633cecb96e",
+  "tags": [
+    {
+      "name": "aipp"
+    }
+  ]
+}

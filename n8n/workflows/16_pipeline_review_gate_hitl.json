@@ -1,0 +1,337 @@
+{
+  "name": "AIPP \u00b7 16 \u00b7 Pipeline Review Gate (HITL)",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "aipp-pipeline-review",
+        "responseMode": "onReceived",
+        "options": {
+          "responseData": "allEntries"
+        }
+      },
+      "id": "662b4ac0-472c-5b11-87ff-94e53f283cb0",
+      "name": "AIPP \u00b7 Pipeline-Generated Hook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.0,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "trace-1",
+              "name": "traceId",
+              "value": "={{ $execution.id + '-' + $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-2",
+              "name": "startedAt",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-3",
+              "name": "workflow",
+              "value": "={{ $workflow.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "c18701e8-2c18-5943-a28a-1303e392fe22",
+      "name": "Init Trace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        380,
+        300
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "v-0",
+              "name": "run_id",
+              "value": "={{ $json.body?.run_id || $json.run_id || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "v-1",
+              "name": "target_platform",
+              "value": "={{ $json.body?.target_platform || $json.target_platform || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "v-2",
+              "name": "cloud",
+              "value": "={{ $json.body?.cloud || $json.cloud || '' }}",
+              "type": "string"
+            },
+            {
+              "id": "v-3",
+              "name": "repo",
+              "value": "={{ $json.body?.repo || $json.repo || 'unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "v-4",
+              "name": "actor",
+              "value": "={{ $json.body?.actor || $json.actor || 'anonymous' }}",
+              "type": "string"
+            },
+            {
+              "id": "v-5",
+              "name": "summary_url",
+              "value": "={{ $json.body?.summary_url || $json.summary_url || '' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "5acef8f7-aa4e-5cca-ac36-92a48e0b2828",
+      "name": "Validate Input",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        560,
+        300
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You are a change-management analyst. From the pipeline metadata output JSON: {risk_level(low|med|high), one_line_summary, top_concerns[<=3]}. Consider blast radius from `cloud` + `target_platform`."
+            },
+            {
+              "role": "user",
+              "content": "Run: {{$json.run_id}}\nTarget: {{$json.target_platform}} / {{$json.cloud}}\nRepo:   {{$json.repo}}\nActor:  {{$json.actor}}"
+            }
+          ]
+        },
+        "simplify": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "63051d62-d386-5dfc-8220-9cbfebcc8bad",
+      "name": "AI \u00b7 Risk Summary",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        740,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "jsonParameters": true,
+        "blocks": "=[{\"type\": \"header\", \"text\": {\"type\": \"plain_text\", \"text\": \"\\ud83d\\udec2  Pipeline Review Requested \\u2014 HITL Gate\", \"emoji\": true}}, {\"type\": \"section\", \"text\": {\"type\": \"mrkdwn\", \"text\": \"\\u2022 *Run ID:*  `{{$json.run_id || $('Validate Input').item.json.run_id || 'run-latest'}}`\\n\\u2022 *Target:*  `{{$json.target_platform || $('Validate Input').item.json.target_platform || 'github_actions'}}` on `{{$json.cloud || $('Validate Input').item.json.cloud || 'azure'}}`\\n\\u2022 *Repo:*  `{{$json.repo || $('Validate Input').item.json.repo || 'owner/repo'}}`\\n\\u2022 *By:*  `{{$json.actor || $('Validate Input').item.json.actor || 'admin'}}`\\n\\u2022 *Risk Level:*  *{{$json.risk_level || 'low'}}* \\u2014 {{$json.one_line_summary || 'Standard pipeline deployment'}}\"}}, {\"type\": \"actions\", \"block_id\": \"aipp_hitl_approval\", \"elements\": [{\"type\": \"button\", \"action_id\": \"approve\", \"style\": \"primary\", \"text\": {\"type\": \"plain_text\", \"text\": \"\\u2705  Approve\", \"emoji\": true}, \"value\": \"{{$execution.resumeUrl}}\", \"confirm\": {\"title\": {\"type\": \"plain_text\", \"text\": \"Confirm approval\"}, \"text\": {\"type\": \"mrkdwn\", \"text\": \"This will resume the parked n8n execution and apply the proposed change. Continue?\"}, \"confirm\": {\"type\": \"plain_text\", \"text\": \"Yes, apply\"}, \"deny\": {\"type\": \"plain_text\", \"text\": \"Cancel\"}}}, {\"type\": \"button\", \"action_id\": \"reject\", \"style\": \"danger\", \"text\": {\"type\": \"plain_text\", \"text\": \"\\u274c  Reject\", \"emoji\": true}, \"value\": \"{{$execution.resumeUrl}}\"}]}, {\"type\": \"context\", \"elements\": [{\"type\": \"mrkdwn\", \"text\": \"Buttons require the AIPP Slack bridge \\u2014 if a click does nothing, fall back to the resume link below.\"}]}]",
+        "text": "=*\ud83d\udec2  Pipeline Review Requested \u2014 HITL Gate*\n\n\u2022 *Run ID:*  `{{$json.run_id || $('Validate Input').item.json.run_id || 'run-latest'}}`\n\u2022 *Target:*  `{{$json.target_platform || $('Validate Input').item.json.target_platform || 'github_actions'}}` on `{{$json.cloud || $('Validate Input').item.json.cloud || 'azure'}}`\n\u2022 *Repo:*  `{{$json.repo || $('Validate Input').item.json.repo || 'owner/repo'}}`\n\u2022 *By:*  `{{$json.actor || $('Validate Input').item.json.actor || 'admin'}}`\n\u2022 *Risk Level:*  *{{$json.risk_level || 'low'}}* \u2014 {{$json.one_line_summary || 'Standard pipeline deployment'}}\n\n\ud83d\udc64 *Sign-off \u2014 one click:*\n\u2022 \u2705 <{{$execution.resumeUrl}}&a=approve|APPROVE \u2014 apply the fix>\n\u2022 \u274c <{{$execution.resumeUrl}}&a=reject|REJECT \u2014 do nothing>\n_Waits up to 24h for your decision._\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "unfurlLinks": false,
+          "unfurlMedia": false
+        }
+      },
+      "id": "dc17f29d-7245-5da4-8254-3aed6d5854ce",
+      "name": "Slack \u00b7 HITL Approval Card",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        920,
+        300
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "httpMethod": "GET",
+        "responseCode": 200,
+        "responseMode": "onReceived",
+        "responseData": "Approval recorded \u2014 you can close this tab.",
+        "limitWaitTime": false,
+        "options": {}
+      },
+      "id": "22204cf7-168e-54d0-b013-9f78018295f5",
+      "name": "Wait for Approval",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        1080,
+        300
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dec-1",
+              "name": "decision",
+              "value": "={{ ($json.headers?.['user-agent'] || '').toLowerCase().includes('slackbot') ? 'slackbot_ignore' : ($json.query?.a || $json.body?.a || $json.params?.a || $json.a || 'reject').toString().toLowerCase() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "12b609d3-7f51-5383-bc75-2a31571814ec",
+      "name": "Normalize Decision",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1220,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "AIPP \u00b7 Pipeline-Generated Hook": {
+      "main": [
+        [
+          {
+            "node": "Init Trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Trace": {
+      "main": [
+        [
+          {
+            "node": "Validate Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Validate Input": {
+      "main": [
+        [
+          {
+            "node": "AI \u00b7 Risk Summary",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI \u00b7 Risk Summary": {
+      "main": [
+        [
+          {
+            "node": "Slack \u00b7 HITL Approval Card",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack \u00b7 HITL Approval Card": {
+      "main": [
+        [
+          {
+            "node": "Wait for Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Approval": {
+      "main": [
+        [
+          {
+            "node": "Normalize Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "AIPP \u00b7 00 \u00b7 Error Sink"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "aipp"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "cda3d66d-a1f0-5fa0-94f0-9935496d18a3",
+  "tags": [
+    {
+      "name": "aipp"
+    }
+  ]
+}

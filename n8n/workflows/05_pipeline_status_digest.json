@@ -1,0 +1,285 @@
+{
+  "name": "AIPP \u00b7 05 \u00b7 Pipeline Status Digest",
+  "nodes": [
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "*/30 * * * *"
+            }
+          ]
+        }
+      },
+      "id": "80864982-49e9-5fde-8750-51572c107b90",
+      "name": "Every 30 min",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "trace-1",
+              "name": "traceId",
+              "value": "={{ $execution.id + '-' + $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-2",
+              "name": "startedAt",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-3",
+              "name": "workflow",
+              "value": "={{ $workflow.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "c18701e8-2c18-5943-a28a-1303e392fe22",
+      "name": "Init Trace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        380,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://192.168.88.22:30801/api/proxy/ado/runs",
+        "method": "GET",
+        "sendBody": false,
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer AMS2zaOxP9t4aMgsn0IcMsKjOx3EkcvEOrIC_H61SXvD4gborHjoH4pJjieedloP"
+            }
+          ]
+        }
+      },
+      "id": "5eaf58e8-df69-50ec-b67d-6dc572d2bbe2",
+      "name": "ADO \u00b7 List Runs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        200
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "http://192.168.88.22:30801/api/proxy/github/runs/Subinoy2024/AIPP-AI-Driven-Pipeline-Platform-RACE",
+        "method": "GET",
+        "sendBody": false,
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer AMS2zaOxP9t4aMgsn0IcMsKjOx3EkcvEOrIC_H61SXvD4gborHjoH4pJjieedloP"
+            }
+          ]
+        }
+      },
+      "id": "43508ce6-9a47-545f-99e1-1cc9eb2759a8",
+      "name": "GitHub \u00b7 List Actions Runs",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        560,
+        400
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ag-1",
+              "name": "ado_running",
+              "value": "={{ (($('ADO \u00b7 List Runs').item.json.value) || []).filter(r => r.state === 'inProgress').length }}",
+              "type": "number"
+            },
+            {
+              "id": "ag-2",
+              "name": "ado_failed",
+              "value": "={{ (($('ADO \u00b7 List Runs').item.json.value) || []).filter(r => r.result === 'failed').length }}",
+              "type": "number"
+            },
+            {
+              "id": "ag-3",
+              "name": "gha_running",
+              "value": "={{ (($('GitHub \u00b7 List Actions Runs').item.json.workflow_runs) || []).filter(r => r.status === 'in_progress').length }}",
+              "type": "number"
+            },
+            {
+              "id": "ag-4",
+              "name": "gha_failed",
+              "value": "={{ (($('GitHub \u00b7 List Actions Runs').item.json.workflow_runs) || []).filter(r => r.conclusion === 'failure').length }}",
+              "type": "number"
+            },
+            {
+              "id": "ag-5",
+              "name": "failed_names",
+              "value": "={{ [...(($('ADO \u00b7 List Runs').item.json.value) || []).filter(r => r.result === 'failed').map(r => r.name),...(($('GitHub \u00b7 List Actions Runs').item.json.workflow_runs) || []).filter(r => r.conclusion === 'failure').map(r => r.name)].slice(0, 5) }}",
+              "type": "array"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "id": "787aab8b-334f-5b70-af97-8ef003b088e0",
+      "name": "Aggregate",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        740,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "text": "=\ud83d\udcca *Pipeline status*\n\u2022 ADO running `{{$json.ado_running}}` \u00b7 failed `{{$json.ado_failed}}`\n\u2022 GHA running `{{$json.gha_running}}` \u00b7 failed `{{$json.gha_failed}}`\nRecent failures: `{{$json.failed_names.join(', ') || 'none'}}`\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "fb97f8e0-1571-52d6-a716-54fa8ad1e49a",
+      "name": "Slack \u00b7 Digest",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        920,
+        300
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "Every 30 min": {
+      "main": [
+        [
+          {
+            "node": "Init Trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Trace": {
+      "main": [
+        [
+          {
+            "node": "ADO \u00b7 List Runs",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "GitHub \u00b7 List Actions Runs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ADO \u00b7 List Runs": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GitHub \u00b7 List Actions Runs": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Slack \u00b7 Digest",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "AIPP \u00b7 00 \u00b7 Error Sink"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "aipp"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "a5020276-c2d7-573e-8c00-8e4c824d2696",
+  "tags": [
+    {
+      "name": "aipp"
+    }
+  ]
+}

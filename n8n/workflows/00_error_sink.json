@@ -1,0 +1,197 @@
+{
+  "name": "AIPP \u00b7 00 \u00b7 Error Sink",
+  "nodes": [
+    {
+      "parameters": {},
+      "id": "385d8052-a076-5655-8ed0-0237444f7c74",
+      "name": "Error Trigger",
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1.0,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e-1",
+              "name": "workflow",
+              "value": "={{ $json.workflow?.name || 'unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "e-2",
+              "name": "node",
+              "value": "={{ $json.execution?.lastNodeExecuted || 'unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "e-3",
+              "name": "message",
+              "value": "={{ $json.execution?.error?.message || 'unknown' }}",
+              "type": "string"
+            },
+            {
+              "id": "e-4",
+              "name": "stack",
+              "value": "={{ ($json.execution?.error?.stack || '').split('\\n').slice(0,5).join('\\n') }}",
+              "type": "string"
+            },
+            {
+              "id": "e-5",
+              "name": "when",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": false,
+        "options": {}
+      },
+      "id": "e85e9a4a-e6f4-5462-ba08-fee0bc9f7f82",
+      "name": "Shape Error",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        420,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You write 2-line SRE RCA summaries. Output JSON: {likely_cause, remediation_hint, severity(P1|P2|P3)}. Be concise, actionable."
+            },
+            {
+              "role": "user",
+              "content": "Workflow: {{$json.workflow}}\nNode: {{$json.node}}\nError: {{$json.message}}\nStack: {{$json.stack}}"
+            }
+          ]
+        },
+        "simplify": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "6b85d91e-ae74-51f5-a4bc-24c3af722e09",
+      "name": "AI \u00b7 RCA",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        640,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "text": "=\u274c *AIPP workflow failure*\n\u2022 Workflow: `{{$('Shape Error').item.json.workflow}}`\n\u2022 Node: `{{$('Shape Error').item.json.node}}`\n\u2022 Error: `{{$('Shape Error').item.json.message}}`\n\u2022 Likely cause: {{$json.likely_cause}}\n\u2022 Remediation: {{$json.remediation_hint}}\n\u2022 Severity: `{{$json.severity}}`\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "6e212e06-b103-50e5-a4ec-fffe59d1bc61",
+      "name": "Slack \u00b7 Error",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        860,
+        300
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "Shape Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Shape Error": {
+      "main": [
+        [
+          {
+            "node": "AI \u00b7 RCA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI \u00b7 RCA": {
+      "main": [
+        [
+          {
+            "node": "Slack \u00b7 Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "aipp"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "bf011771-6324-5fe4-990b-892da3a13bef",
+  "tags": [
+    {
+      "name": "aipp"
+    }
+  ]
+}

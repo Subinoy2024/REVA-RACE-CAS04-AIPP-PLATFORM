@@ -1,0 +1,536 @@
+{
+  "name": "AIPP \u00b7 10 \u00b7 Incident Commander Bot",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "aipp-incident",
+        "responseMode": "onReceived",
+        "options": {
+          "responseData": "allEntries"
+        }
+      },
+      "id": "0fe3e0a8-8891-54e0-b2cd-6d4dfaa20e61",
+      "name": "Azure Monitor \u00b7 Alert",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.0,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "trace-1",
+              "name": "traceId",
+              "value": "={{ $execution.id + '-' + $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-2",
+              "name": "startedAt",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-3",
+              "name": "workflow",
+              "value": "={{ $workflow.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "c18701e8-2c18-5943-a28a-1303e392fe22",
+      "name": "Init Trace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        380,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ac-1",
+              "name": "severity_raw",
+              "value": "={{ ($json.body?.data?.essentials?.severity || $json.data?.essentials?.severity || 'Sev3') }}",
+              "type": "string"
+            },
+            {
+              "id": "ac-2",
+              "name": "service",
+              "value": "={{ ($json.body?.data?.essentials?.alertTargetIDs?.[0] || $json.data?.essentials?.alertTargetIDs?.[0] || 'unknown') }}",
+              "type": "string"
+            },
+            {
+              "id": "ac-3",
+              "name": "fired_at",
+              "value": "={{ ($json.body?.data?.essentials?.firedDateTime || $json.data?.essentials?.firedDateTime || $now.toISO()) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "78477381-52ed-5d49-b8c8-0a397c0d07ca",
+      "name": "1. Accept",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        560,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "Classify P1/P2/P3. Reply JSON: {severity, why}."
+            },
+            {
+              "role": "user",
+              "content": "Raw severity: {{$json.severity_raw}}\nService: {{$json.service}}"
+            }
+          ]
+        },
+        "simplify": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "fa12d2f6-528c-522e-991d-f0e4e2bc9394",
+      "name": "2. Classify Severity",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        740,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "http://192.168.88.22:30801/api/proxy/k8s/pods?ns=prod",
+        "method": "GET",
+        "sendBody": false,
+        "options": {},
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer AMS2zaOxP9t4aMgsn0IcMsKjOx3EkcvEOrIC_H61SXvD4gborHjoH4pJjieedloP"
+            }
+          ]
+        }
+      },
+      "id": "8d19270e-c6d6-59b6-8b2c-8bf98365fe7d",
+      "name": "3. Check K8s Prod Pods",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        920,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "From service name + service-ownership map, pick target team. Output JSON: {team, confidence(0-1), reasoning}. Confidence < 0.7 means ask a human."
+            },
+            {
+              "role": "user",
+              "content": "Service: {{$('1. Accept').item.json.service}}\nMap: {\"api-*\":\"backend-team\",\"web-*\":\"frontend-team\",\"payments-*\":\"platform\"}\nDiagnostics: {{JSON.stringify($('3. Check K8s Prod Pods').item.json)}}"
+            }
+          ]
+        },
+        "simplify": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "9e8ffc0e-3ebf-52ed-b557-247c3dd1a0f8",
+      "name": "4. Assign Team",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        1100,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "if-1",
+              "leftValue": "={ $json.confidence >= 0.7 }",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "9e8c8b6d-4735-5383-bb3a-41dc7b16a204",
+      "name": "Confidence \u2265 0.7?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1280,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "text": "=\ud83d\ude91 *P{{$('2. Classify Severity').item.json.severity}} auto-assigned to `{{$json.team}}`*\nService: `{{$('1. Accept').item.json.service}}`\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "5973867f-ae08-5cb6-8b18-382dd291e405",
+      "name": "Slack \u00b7 Auto-Assign",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1460,
+        200
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "text": "=\ud83e\udd16 *AI unsure \u2014 need human triage* (conf `{{$('4. Assign Team').item.json.confidence}}`)\nService: `{{$('1. Accept').item.json.service}}`\nBest guess: `{{$('4. Assign Team').item.json.team}}` \u2014 reply with team name to override.\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "8cf2ce1d-ee6d-51cc-8ed6-e88aa3eba410",
+      "name": "Slack \u00b7 Ask Human",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1460,
+        400
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "Draft customer-facing status message + internal update. Output JSON: {customer_msg, internal_msg, status_page_title}."
+            },
+            {
+              "role": "user",
+              "content": "Severity: P{{$('2. Classify Severity').item.json.severity}}\nService: {{$('1. Accept').item.json.service}}"
+            }
+          ]
+        },
+        "simplify": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "3f93bc27-e3e0-5981-bd08-14758262bff1",
+      "name": "5. Draft Comms",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        1640,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "text": "=\ud83d\udcdd *Comms draft \u2014 review before sending*\n\u2022 Customer: {{$json.customer_msg}}\n\u2022 Internal: {{$json.internal_msg}}\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "5746c559-7cb6-5cd3-809d-7cc27c85cec9",
+      "name": "Slack \u00b7 Comms Draft",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1820,
+        300
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "Azure Monitor \u00b7 Alert": {
+      "main": [
+        [
+          {
+            "node": "Init Trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Trace": {
+      "main": [
+        [
+          {
+            "node": "1. Accept",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Accept": {
+      "main": [
+        [
+          {
+            "node": "2. Classify Severity",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Classify Severity": {
+      "main": [
+        [
+          {
+            "node": "3. Check K8s Prod Pods",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "3. Check K8s Prod Pods": {
+      "main": [
+        [
+          {
+            "node": "4. Assign Team",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Assign Team": {
+      "main": [
+        [
+          {
+            "node": "Confidence \u2265 0.7?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Confidence \u2265 0.7?": {
+      "main": [
+        [
+          {
+            "node": "Slack \u00b7 Auto-Assign",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack \u00b7 Ask Human",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack \u00b7 Auto-Assign": {
+      "main": [
+        [
+          {
+            "node": "5. Draft Comms",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack \u00b7 Ask Human": {
+      "main": [
+        [
+          {
+            "node": "5. Draft Comms",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Draft Comms": {
+      "main": [
+        [
+          {
+            "node": "Slack \u00b7 Comms Draft",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "AIPP \u00b7 00 \u00b7 Error Sink"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "aipp"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "7378f51e-62f4-5b05-a1c7-14a11a406a27",
+  "tags": [
+    {
+      "name": "aipp"
+    }
+  ]
+}

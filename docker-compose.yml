@@ -1,0 +1,114 @@
+# Docker Compose spec (no `version:` key — Compose v2 warns about it as
+# obsolete). Bring services up with `docker compose up -d --build`.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg15    # iteration-34 · pgvector for RAG
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-aipp}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-aipp_local}
+      POSTGRES_DB: ${POSTGRES_DB:-aipp}
+    ports:
+      - "5432:5432"
+    volumes:
+      - aipp_pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-aipp}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: .
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      # Single source of truth: build the DB URLs from the SAME POSTGRES_*
+      # vars that initialise the postgres container above. This prevents
+      # the classic "backend uses one password, Postgres was created with
+      # another" mismatch that was possible when these were hard-coded.
+      POSTGRES_URL: postgresql+asyncpg://${POSTGRES_USER:-aipp}:${POSTGRES_PASSWORD:-aipp_local}@postgres:5432/${POSTGRES_DB:-aipp}
+      POSTGRES_SYNC_URL: postgresql+psycopg2://${POSTGRES_USER:-aipp}:${POSTGRES_PASSWORD:-aipp_local}@postgres:5432/${POSTGRES_DB:-aipp}
+      DATABASE_URL: postgresql+asyncpg://${POSTGRES_USER:-aipp}:${POSTGRES_PASSWORD:-aipp_local}@postgres:5432/${POSTGRES_DB:-aipp}
+      AIPP_LLM_KEY: ${AIPP_LLM_KEY:-${EMERGENT_LLM_KEY:-}}
+      LLM_PROVIDER: ${LLM_PROVIDER:-anthropic}
+      LLM_MODEL: ${LLM_MODEL:-claude-sonnet-4-6}
+      ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+      # n8n is NOT bundled — we integrate with your existing local n8n.
+      # Point N8N_BASE_URL at wherever your n8n is reachable from inside
+      # the backend container. Handy defaults:
+      #   - host machine on Linux : http://host.docker.internal:5678
+      #     (works out of the box on macOS/Windows; on Linux the
+      #      `extra_hosts` block below adds the same alias.)
+      #   - LAN IP                : http://192.168.x.x:5678
+      #   - reverse-proxy domain  : https://n8n.mydomain.com
+      N8N_BASE_URL: ${N8N_BASE_URL:-}
+      N8N_API_KEY: ${N8N_API_KEY:-}
+      # Auth + encryption (Iteration-23 / 24 / 25)
+      JWT_SECRET: ${JWT_SECRET:-aipp-dev-secret-please-override-in-prod-64-chars-of-entropy}
+      AIPP_DEFAULT_ADMIN_EMAIL: ${AIPP_DEFAULT_ADMIN_EMAIL:-admin@aipp.local}
+      AIPP_DEFAULT_ADMIN_PASSWORD: ${AIPP_DEFAULT_ADMIN_PASSWORD:-aipp-change-me}
+      AIPP_FERNET_KEY: ${AIPP_FERNET_KEY:-}
+      # OIDC (optional)
+      OIDC_PROVIDER: ${OIDC_PROVIDER:-off}
+      OIDC_CLIENT_ID: ${OIDC_CLIENT_ID:-}
+      OIDC_CLIENT_SECRET: ${OIDC_CLIENT_SECRET:-}
+      OIDC_DISCOVERY_URL: ${OIDC_DISCOVERY_URL:-}
+      OIDC_TENANT_ID: ${OIDC_TENANT_ID:-common}
+      AIPP_PUBLIC_URL: ${AIPP_PUBLIC_URL:-http://localhost:3300}
+      AIPP_BACKEND_PUBLIC_URL: ${AIPP_BACKEND_PUBLIC_URL:-http://localhost:8001}
+      # Email (optional; empty = log to stdout)
+      RESEND_API_KEY: ${RESEND_API_KEY:-}
+      EMAIL_FROM: ${EMAIL_FROM:-AIPP <noreply@aipp.local>}
+      CORS_ORIGINS: "*"
+      # ---- Secret-Vault Proxy (n8n → AIPP) --------------------------------
+      # n8n workflows authenticate to /api/proxy/* with this bearer token.
+      # AIPP fans out to the infra credentials below on n8n's behalf so
+      # no infra secret ever lives on the n8n host.
+      PROXY_API_KEY: ${PROXY_API_KEY:-}
+      K8S_API_URL: ${K8S_API_URL:-}
+      K8S_TOKEN: ${K8S_TOKEN:-}
+      K8S_CA_VERIFY: ${K8S_CA_VERIFY:-false}
+      PROXMOX_URL: ${PROXMOX_URL:-}
+      PROXMOX_TOKEN: ${PROXMOX_TOKEN:-}
+      PROXMOX_NODE: ${PROXMOX_NODE:-}
+      PROXMOX_VERIFY_SSL: ${PROXMOX_VERIFY_SSL:-false}
+      GRAFANA_URL: ${GRAFANA_URL:-}
+      GRAFANA_API_KEY: ${GRAFANA_API_KEY:-}
+      GITHUB_PAT: ${GITHUB_PAT:-}
+      GH_ORG: ${GH_ORG:-}
+      GH_REPO: ${GH_REPO:-}
+      IAC_REPO_OWNER: ${IAC_REPO_OWNER:-}
+      IAC_REPO_NAME: ${IAC_REPO_NAME:-}
+      GH_REPO_ALLOWLIST: ${GH_REPO_ALLOWLIST:-}
+      ADO_ORG: ${ADO_ORG:-}
+      ADO_PROJECT: ${ADO_PROJECT:-}
+      ADO_PAT: ${ADO_PAT:-}
+    # Linux Docker doesn't auto-resolve host.docker.internal — this line
+    # makes it work identically to macOS/Windows so the backend container
+    # can reach an n8n running on the host's 5678 port.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    command: uvicorn backend.server:app --host 0.0.0.0 --port 8001
+    ports:
+      - "8001:8001"
+
+  frontend:
+    build: .
+    depends_on:
+      - backend
+    environment:
+      AIPP_INTERNAL_BACKEND_URL: http://backend:8001
+      PORT: "3000"
+    command: python3 -u /app/frontend/gradio_app.py
+    ports:
+      # Host 3300 -> container 3000. Port 3000 is commonly taken on developer
+      # workstations (Harness Delegate, React dev-server, Grafana, ...) so we
+      # publish on 3300 to avoid the collision. Access the UI at http://host:3300
+      - "3300:3000"
+
+volumes:
+  aipp_pg_data:

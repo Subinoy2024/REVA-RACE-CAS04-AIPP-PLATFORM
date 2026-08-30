@@ -1,0 +1,645 @@
+{
+  "name": "AIPP \u00b7 04 \u00b7 Developer Self-Service Portal",
+  "nodes": [
+    {
+      "parameters": {
+        "path": "aipp-self-service-vm-request",
+        "formTitle": "AIPP Self-Service \u2014 VM Request",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Target",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "proxmox"
+                  },
+                  {
+                    "option": "azure"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Workload description",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Requester email",
+              "fieldType": "email",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "appendAttribution": false
+        }
+      },
+      "id": "5b87416d-6a40-5429-9581-2bf1c0a1d6a4",
+      "name": "Intake Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.1,
+      "position": [
+        200,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "duplicateItem": false,
+        "assignments": {
+          "assignments": [
+            {
+              "id": "trace-1",
+              "name": "traceId",
+              "value": "={{ $execution.id + '-' + $now.toMillis() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-2",
+              "name": "startedAt",
+              "value": "={{ $now.toISO() }}",
+              "type": "string"
+            },
+            {
+              "id": "trace-3",
+              "name": "workflow",
+              "value": "={{ $workflow.name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "c18701e8-2c18-5943-a28a-1303e392fe22",
+      "name": "Init Trace",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        380,
+        300
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "text",
+        "operation": "message",
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "messages": {
+          "values": [
+            {
+              "role": "system",
+              "content": "You size VMs from natural-language workload descriptions. Output ONLY a raw JSON object (no markdown, no prose). Schema: {\"cpu\":<int>, \"memory_gb\":<int>, \"disk_gb\":<int>, \"os\":\"ubuntu|windows\", \"notes\":\"<one line>\"}. Cap at 8 CPU / 32 GB RAM / 200 GB disk."
+            },
+            {
+              "role": "user",
+              "content": "Target: {{$json['Target']}}\nWorkload: {{$json['Workload description']}}"
+            }
+          ]
+        },
+        "simplify": true,
+        "options": {
+          "temperature": 0.2
+        }
+      },
+      "id": "4090ba4e-2e73-51af-bfd8-8055ac8d3726",
+      "name": "AI \u00b7 Size the VM",
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.6,
+      "position": [
+        560,
+        300
+      ],
+      "credentials": {
+        "openAiApi": {
+          "id": "",
+          "name": "OpenAI account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "ai-parse",
+              "name": "ai",
+              "value": "={{ JSON.parse($json.message?.content || $json.content || $json.text || '{}') }}",
+              "type": "object"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "bf53a90c-beb1-5e66-8bb1-279a4dbcaaa2",
+      "name": "Parse AI Output",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        680,
+        300
+      ],
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "jsonParameters": true,
+        "blocks": "=[{\"type\": \"header\", \"text\": {\"type\": \"plain_text\", \"text\": \"\\ud83d\\udcbb  VM Provisioning \\u2014 Approval Needed\", \"emoji\": true}}, {\"type\": \"section\", \"text\": {\"type\": \"mrkdwn\", \"text\": \"\\u2022 *Requester:*  `{{$('Intake Form').item.json['Requester email']}}`\\n\\u2022 *Target:*  `{{$('Intake Form').item.json['Target']}}`\\n\\u2022 *Workload:*  {{$('Intake Form').item.json['Workload description']}}\\n\\u2022 *AI-sized:*  cpu=`{{$json.ai.cpu || '?'}}` mem=`{{$json.ai.memory_gb || '?'}}G` disk=`{{$json.ai.disk_gb || '?'}}G` os=`{{$json.ai.os || '?'}}`\\n\\u2022 *Notes:*  {{$json.ai.notes || 'n/a'}}\"}}, {\"type\": \"actions\", \"block_id\": \"aipp_hitl_approval\", \"elements\": [{\"type\": \"button\", \"action_id\": \"approve\", \"style\": \"primary\", \"text\": {\"type\": \"plain_text\", \"text\": \"\\u2705  Approve\", \"emoji\": true}, \"value\": \"{{$execution.resumeUrl}}\", \"confirm\": {\"title\": {\"type\": \"plain_text\", \"text\": \"Confirm approval\"}, \"text\": {\"type\": \"mrkdwn\", \"text\": \"This will resume the parked n8n execution and apply the proposed change. Continue?\"}, \"confirm\": {\"type\": \"plain_text\", \"text\": \"Yes, apply\"}, \"deny\": {\"type\": \"plain_text\", \"text\": \"Cancel\"}}}, {\"type\": \"button\", \"action_id\": \"reject\", \"style\": \"danger\", \"text\": {\"type\": \"plain_text\", \"text\": \"\\u274c  Reject\", \"emoji\": true}, \"value\": \"{{$execution.resumeUrl}}\"}]}, {\"type\": \"context\", \"elements\": [{\"type\": \"mrkdwn\", \"text\": \"Buttons require the AIPP Slack bridge \\u2014 if a click does nothing, fall back to the resume link below.\"}]}]",
+        "text": "=*\ud83d\udcbb  VM Provisioning \u2014 Approval Needed*\n\n\u2022 *Requester:*  `{{$('Intake Form').item.json['Requester email']}}`\n\u2022 *Target:*  `{{$('Intake Form').item.json['Target']}}`\n\u2022 *Workload:*  {{$('Intake Form').item.json['Workload description']}}\n\u2022 *AI-sized:*  cpu=`{{$json.ai.cpu || '?'}}` mem=`{{$json.ai.memory_gb || '?'}}G` disk=`{{$json.ai.disk_gb || '?'}}G` os=`{{$json.ai.os || '?'}}`\n\u2022 *Notes:*  {{$json.ai.notes || 'n/a'}}\n\n\ud83d\udc64 *Sign-off \u2014 one click:*\n\u2022 \u2705 <{{$execution.resumeUrl}}&a=approve|APPROVE \u2014 apply the fix>\n\u2022 \u274c <{{$execution.resumeUrl}}&a=reject|REJECT \u2014 do nothing>\n_Waits up to 24h for your decision._\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false,
+          "unfurlLinks": false,
+          "unfurlMedia": false
+        }
+      },
+      "id": "00e68898-a33c-5729-af76-f90d2f42e8f1",
+      "name": "Slack \u00b7 Ask Provision Approval",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        720,
+        300
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "resume": "webhook",
+        "httpMethod": "GET",
+        "responseCode": 200,
+        "responseMode": "onReceived",
+        "responseData": "Approval recorded \u2014 you can close this tab.",
+        "limitWaitTime": false,
+        "options": {}
+      },
+      "id": "22204cf7-168e-54d0-b013-9f78018295f5",
+      "name": "Wait for Approval",
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        880,
+        300
+      ],
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "manual",
+        "assignments": {
+          "assignments": [
+            {
+              "id": "dec-1",
+              "name": "decision",
+              "value": "={{ ($json.headers?.['user-agent'] || '').toLowerCase().includes('slackbot') ? 'slackbot_ignore' : ($json.query?.a || $json.body?.a || $json.params?.a || $json.a || 'reject').toString().toLowerCase() }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "12b609d3-7f51-5383-bc75-2a31571814ec",
+      "name": "Normalize Decision",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1020,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "if-eq",
+              "leftValue": "={{ $json.decision }}",
+              "rightValue": "approve",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "6bbdb892-826f-5495-a664-9f0cc405aa27",
+      "name": "Approved?",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1040,
+        300
+      ]
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "loose"
+          },
+          "conditions": [
+            {
+              "id": "if-1",
+              "leftValue": "={ $('Intake Form').item.json['Target'] === 'proxmox' }",
+              "rightValue": "true",
+              "operator": {
+                "type": "string",
+                "operation": "equals"
+              }
+            }
+          ],
+          "combinator": "and"
+        }
+      },
+      "id": "52728492-9540-5127-95b6-99789bba7141",
+      "name": "Route by Target",
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2.2,
+      "position": [
+        1220,
+        200
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://192.168.88.22:30801/api/proxy/proxmox/vm",
+        "method": "POST",
+        "sendBody": true,
+        "options": {},
+        "contentType": "json",
+        "jsonBody": "{\"cores\": \"={{$('AI \\u00b7 Size the VM').item.json.message.content.cpu || 2}}\", \"memory_mb\": \"={{($('AI \\u00b7 Size the VM').item.json.message.content.memory_gb || 2) * 1024}}\", \"name\": \"aipp-{{$('Intake Form').item.json['Requester email'].split('@')[0]}}\"}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "Bearer AMS2zaOxP9t4aMgsn0IcMsKjOx3EkcvEOrIC_H61SXvD4gborHjoH4pJjieedloP"
+            }
+          ]
+        }
+      },
+      "id": "09457902-7f2f-5ac3-96fc-695a8682d65d",
+      "name": "Proxmox \u00b7 Create VM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1400,
+        100
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000,
+      "onError": "continueRegularOutput",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "url": "https://login.microsoftonline.com/474565c1-bca4-4295-a2f5-b0c7dbf2591c/oauth2/v2.0/token",
+        "method": "POST",
+        "sendBody": true,
+        "contentType": "form-urlencoded",
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "grant_type",
+              "value": "client_credentials"
+            },
+            {
+              "name": "client_id",
+              "value": "187f188e-af23-4090-ba72-820b22d4b87a"
+            },
+            {
+              "name": "client_secret",
+              "value": ""
+            },
+            {
+              "name": "scope",
+              "value": "https://management.azure.com/.default"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "1166088b-b9c6-5363-a720-ccea75d77934",
+      "name": "Azure \u00b7 Get Token",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1400,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "url": "=https://management.azure.com/subscriptions/3d88343d-13f8-4ac6-9b35-44e30ba1e895/resourceGroups/rg-aipp-sre-demo/providers/Microsoft.Compute/virtualMachines/aipp-{{$('Intake Form').item.json['Requester email'].split('@')[0]}}?api-version=2023-03-01",
+        "method": "PUT",
+        "sendBody": true,
+        "options": {},
+        "contentType": "json",
+        "jsonBody": "{\"location\": \"eastus\", \"properties\": {\"hardwareProfile\": {\"vmSize\": \"Standard_B2s\"}, \"storageProfile\": {\"osDisk\": {\"createOption\": \"FromImage\"}}}}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{$('Azure \u00b7 Get Token').item.json.access_token}}"
+            }
+          ]
+        }
+      },
+      "id": "8f378e49-1758-5f0d-9d39-6e46a977c517",
+      "name": "Azure \u00b7 Create VM",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1580,
+        300
+      ],
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "text": "=\ud83d\udcbb *VM provisioned* for `{{$('Intake Form').item.json['Requester email']}}`\nTarget: `{{$('Intake Form').item.json['Target']}}` \u00b7 {{$('AI \u00b7 Size the VM').item.json.message.content}}\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "777d9c74-cc0e-5208-8dba-f07028d23da5",
+      "name": "Slack \u00b7 Provisioned",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1760,
+        200
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    },
+    {
+      "parameters": {
+        "resource": "message",
+        "operation": "post",
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "aipp",
+          "mode": "name"
+        },
+        "text": "=\u274c *VM request rejected \u2014 no provisioning performed*\nRequester: `{{$('Intake Form').item.json['Requester email']}}`\n\n_trace: `{{ $('Init Trace').item.json.traceId || 'n/a' }}`_",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "id": "eecfff98-9ff7-5ed3-80da-e7b35c03c062",
+      "name": "Slack \u00b7 Provision Rejected",
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.2,
+      "position": [
+        1220,
+        500
+      ],
+      "credentials": {
+        "slackApi": {
+          "id": "",
+          "name": "Slack account 4"
+        }
+      },
+      "retryOnFail": true,
+      "maxTries": 3,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "Intake Form": {
+      "main": [
+        [
+          {
+            "node": "Init Trace",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Init Trace": {
+      "main": [
+        [
+          {
+            "node": "AI \u00b7 Size the VM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI \u00b7 Size the VM": {
+      "main": [
+        [
+          {
+            "node": "Parse AI Output",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Parse AI Output": {
+      "main": [
+        [
+          {
+            "node": "Slack \u00b7 Ask Provision Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack \u00b7 Ask Provision Approval": {
+      "main": [
+        [
+          {
+            "node": "Wait for Approval",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Approval": {
+      "main": [
+        [
+          {
+            "node": "Normalize Decision",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Decision": {
+      "main": [
+        [
+          {
+            "node": "Approved?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approved?": {
+      "main": [
+        [
+          {
+            "node": "Route by Target",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Slack \u00b7 Provision Rejected",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route by Target": {
+      "main": [
+        [
+          {
+            "node": "Proxmox \u00b7 Create VM",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Azure \u00b7 Get Token",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Proxmox \u00b7 Create VM": {
+      "main": [
+        [
+          {
+            "node": "Slack \u00b7 Provisioned",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure \u00b7 Get Token": {
+      "main": [
+        [
+          {
+            "node": "Azure \u00b7 Create VM",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Azure \u00b7 Create VM": {
+      "main": [
+        [
+          {
+            "node": "Slack \u00b7 Provisioned",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "saveDataErrorExecution": "all",
+    "saveDataSuccessExecution": "all",
+    "errorWorkflow": "AIPP \u00b7 00 \u00b7 Error Sink"
+  },
+  "staticData": null,
+  "meta": {
+    "instanceId": "aipp"
+  },
+  "pinData": {},
+  "active": false,
+  "versionId": "e1841c58-2c2d-5863-a05f-766a8b1e4821",
+  "tags": [
+    {
+      "name": "aipp"
+    }
+  ]
+}

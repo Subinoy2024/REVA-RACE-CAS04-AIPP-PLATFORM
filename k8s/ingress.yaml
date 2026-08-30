@@ -1,0 +1,58 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: aipp-ingress
+  namespace: aipp
+  labels:
+    app.kubernetes.io/name: aipp-ingress
+    app.kubernetes.io/part-of: aipp-platform
+  annotations:
+    kubernetes.io/ingress.class: "nginx"
+    nginx.ingress.kubernetes.io/proxy-body-size: "50m"
+    nginx.ingress.kubernetes.io/enable-cors: "true"
+    nginx.ingress.kubernetes.io/cors-allow-origin: "*"
+spec:
+  rules:
+    # --- Local Domain: dccloud.com ---
+    - host: aipp.dccloud.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: aipp-frontend
+                port:
+                  number: 3000
+    - host: api-aipp.dccloud.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: aipp-backend
+                port:
+                  number: 8001
+
+    # --- Public Domain: dccloud.in.net ---
+    - host: aipp.dccloud.in.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: aipp-frontend
+                port:
+                  number: 3000
+    - host: api-aipp.dccloud.in.net
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: aipp-backend
+                port:
+                  number: 8001
