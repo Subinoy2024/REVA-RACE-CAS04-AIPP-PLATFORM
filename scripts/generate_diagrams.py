@@ -195,62 +195,82 @@ def render_master_architecture():
     print("✓ Master System Architecture (White Diagrams.net Style) rendered successfully.")
 
 # -------------------------------------------------------------
-# 2. Figure 7.1 Flow: End-to-End Application Workflow Diagram
+# 2. Figure 7.2: End-to-End Pipeline Generation & Validation Flow
 # -------------------------------------------------------------
 def render_application_flow():
-    fig, ax = plt.subplots(figsize=(15, 8.5), dpi=300)
-    fig.patch.set_facecolor('#0d1117')
-    ax.set_facecolor('#0d1117')
-    ax.set_xlim(0, 15)
-    ax.set_ylim(0, 8.5)
+    """Render 5-stage Pipeline Generation & Validation flow in clean Modern Enterprise White style."""
+    fig, ax = plt.subplots(figsize=(16, 9), dpi=300)
+    fig.patch.set_facecolor('#FFFFFF')
+    ax.set_facecolor('#FFFFFF')
+    ax.set_xlim(0, 16)
+    ax.set_ylim(0, 9)
     ax.axis('off')
 
-    ax.text(7.5, 8.0, "AIPP — END-TO-END PIPELINE GENERATION & DEPLOYMENT FLOW", 
-            fontsize=15, weight='bold', color='#58a6ff', ha='center', va='center')
-    ax.text(7.5, 7.65, "From Repository Ingestion to Slack HITL Gating & Live Deployment", 
-            fontsize=9.5, color='#8b949e', ha='center', va='center')
+    # Main Header
+    ax.text(8.0, 8.3, "AIPP — End-to-End Pipeline Generation & Validation Flow", 
+            fontsize=17, weight='bold', color='#111827', ha='center', va='center')
+    ax.text(8.0, 7.85, "Zero-Clone Ingestion · pgvector RAG · Multi-Agent AST Synthesis · 4-Gate Verification · Validated PR Emission", 
+            fontsize=9.5, color='#4B5563', ha='center', va='center')
 
-    def draw_step(x, y, w, h, step_num, title, desc, border="#388bfd", bg="#161b22"):
-        rect = patches.FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.12", facecolor=bg, edgecolor=border, linewidth=1.5)
+    # Stages definition
+    stages = [
+        ("Stage 1", "Repository Ingestion\n(Zero-Clone)", 
+         "• GitHub / GitLab MCP\n• In-Memory AST Trees\n• Dependency Manifests:\n  pom.xml, package.json\n  Dockerfiles, Chart.yaml", "#1E40AF", "#EFF6FF"),
+        ("Stage 2", "pgvector RAG\nTemplate Retrieval", 
+         "• PostgreSQL 15 Instance\n• 1536-d Cosine Vector Store\n• HNSW Cosine Index\n• Fetches Top-3 Closest\n  Golden Pipeline Blueprints", "#047857", "#ECFDF5"),
+        ("Stage 3", "LangGraph Multi-Agent\nSynthesis Mesh", 
+         "• RepoAnalyst (Code Map)\n• TechDetector (Ecosystem)\n• Architect (Monolith/DAG)\n• Planner (Matrix Stages)\n• EnvAgent & AST Generator", "#6D28D9", "#F5F3FF"),
+        ("Stage 4", "4-Gate Verification\n& Self-Healing", 
+         "• Gate 1: AST Syntax Check\n• Gate 2: CI Schema Parser\n• Gate 3: 12 OPA Rego Policies\n• Gate 4: Zero-Secret Scan\n• Automatic AST Repair Loop", "#B45309", "#FFFBEB"),
+        ("Stage 5", "Validated Artifact\n& Git PR Emission", 
+         "• Validated Pipeline YAML:\n  GitHub, Azure, GitLab\n• 1-Click Pull Request\n• Zero Runner Execution\n• Immutable audit_logs Sync", "#1F2937", "#F3F4F6")
+    ]
+
+    card_w = 2.7
+    card_h = 5.6
+    y_pos = 1.6
+
+    for idx, (s_tag, s_title, s_desc, border_c, bg_c) in enumerate(stages):
+        x_pos = 0.6 + idx * 3.1
+        
+        # Outer Card
+        rect = patches.FancyBboxPatch((x_pos, y_pos), card_w, card_h, boxstyle="round,pad=0.12", 
+                                      facecolor=bg_c, edgecolor=border_c, linewidth=1.6)
         ax.add_patch(rect)
-        badge = patches.Circle((x + 0.35, y + h - 0.35), 0.22, facecolor=border, edgecolor='none')
-        ax.add_patch(badge)
-        ax.text(x + 0.35, y + h - 0.35, str(step_num), fontsize=8.5, weight='bold', color='#ffffff', ha='center', va='center')
-        ax.text(x + 0.75, y + h - 0.35, title, fontsize=9.5, weight='bold', color='#c9d1d9', ha='left', va='center')
-        ax.text(x + w/2, y + h*0.35, desc, fontsize=7.5, color='#8b949e', ha='center', va='center')
+        
+        # Stage Pill Badge
+        pill = patches.FancyBboxPatch((x_pos + 0.35, y_pos + card_h - 0.45), card_w - 0.7, 0.42, 
+                                     boxstyle="round,pad=0.08", facecolor=border_c, edgecolor='none')
+        ax.add_patch(pill)
+        ax.text(x_pos + card_w/2, y_pos + card_h - 0.24, s_tag, color='white', fontsize=9.5, weight='bold', ha='center', va='center')
+        
+        # Title
+        ax.text(x_pos + card_w/2, y_pos + card_h - 0.95, s_title, fontsize=10, weight='bold', color=border_c, ha='center', va='center')
+        
+        # Inner Details Box
+        inner_box = patches.FancyBboxPatch((x_pos + 0.15, y_pos + 0.2), card_w - 0.3, card_h - 1.8, 
+                                          boxstyle="round,pad=0.08", facecolor='#FFFFFF', edgecolor='#E5E7EB', linewidth=1.2)
+        ax.add_patch(inner_box)
+        ax.text(x_pos + 0.28, y_pos + card_h - 1.85, s_desc, fontsize=8.2, color='#374151', ha='left', va='top', linespacing=1.35)
 
-    draw_step(0.6, 4.8, 3.2, 2.2, 1, "User Ingestion", "• User inputs Repo URL\n• Target CI (GH / GL / ADO)\n• Security Scopes selected\n• FastAPI generates run_id", "#388bfd")
-    draw_step(4.2, 4.8, 3.2, 2.2, 2, "Repo & AST Analysis", "• Clone / analyze file tree\n• Detect lang (Python/Node/Go)\n• Identify package managers\n• Check docker / k8s manifests", "#388bfd")
-    draw_step(7.8, 4.8, 3.2, 2.2, 3, "pgvector RAG Retrieval", "• Query cosine vector store\n• Fetch top-3 golden templates\n• Inject past incident mitigations\n• Assemble prompt context", "#238636")
-    draw_step(11.4, 4.8, 3.0, 2.2, 4, "LangGraph Generation", "• Planner sets DAG tasks\n• Architect selects syntax\n• Generator writes YAML\n• JSON auto-repair engine", "#8957e5")
+        # Connector Arrows between stages
+        if idx < 4:
+            ax.annotate("", xy=(x_pos + card_w + 0.38, y_pos + card_h/2), xytext=(x_pos + card_w + 0.02, y_pos + card_h/2),
+                        arrowprops=dict(arrowstyle="->", color="#4B5563", lw=2.2, mutation_scale=16))
 
-    draw_step(11.4, 1.8, 3.0, 2.2, 5, "OPA & Syntax Validation", "• 12 Rego policy checks\n• Native CI schema parser\n• Zero-secret credential scan\n• Retry loop if syntax fails", "#d29922")
-    draw_step(7.8, 1.8, 3.2, 2.2, 6, "Slack HITL Sign-Off", "• Post Slack Block-Kit card\n• Display diff & risk scores\n• Engineer clicks Approve/Reject\n• HMAC-SHA256 signature check", "#f85149")
-    draw_step(4.2, 1.8, 3.2, 2.2, 7, "MCP Git & K8s Push", "• MCP commits pipeline YAML\n• Push branch to remote repo\n• Apply k8s deployment if set\n• Trigger remote CI runner", "#238636")
-    draw_step(0.6, 1.8, 3.2, 2.2, 8, "Audit & Doctor Sync", "• Immutable log in audit_logs\n• Cost & latency recorded\n• Embed result to pgvector\n• Real-time SSE update to UI", "#388bfd")
+    # Self-Healing Feedback Loop Curve on Stage 4
+    ax.annotate("Self-Healing AST Loop", xy=(9.9 + 1.35, y_pos + card_h + 0.1), xytext=(9.9 + 1.35, y_pos + card_h + 0.6),
+                ha='center', fontsize=8.2, weight='bold', color='#B45309')
 
-    def draw_arrow(x1, y1, x2, y2, color="#58a6ff"):
-        ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
-                    arrowprops=dict(arrowstyle="->", color=color, lw=2.2, mutation_scale=15))
-
-    draw_arrow(3.8, 5.9, 4.2, 5.9)
-    draw_arrow(7.4, 5.9, 7.8, 5.9)
-    draw_arrow(11.0, 5.9, 11.4, 5.9)
-    
-    draw_arrow(12.9, 4.8, 12.9, 4.0)
-    
-    draw_arrow(11.4, 2.9, 11.0, 2.9)
-    draw_arrow(7.8, 2.9, 7.4, 2.9)
-    draw_arrow(4.2, 2.9, 3.8, 2.9)
-
-    ax.text(7.5, 0.75, "✓ Fully Automated, Closed-Loop Flow with Human-in-the-Loop Safeguards & Zero-Leakage Guarantee", 
-            fontsize=9.5, color='#7ee787', ha='center', va='center', weight='bold')
+    # Footer Standard Note
+    ax.text(8.0, 0.75, "Generation-Only Scope: Synthesizes and strictly verifies multi-cloud pipeline definitions without executing deployment runners.", 
+            fontsize=9.2, color='#1F2937', ha='center', va='center', weight='bold')
 
     plt.tight_layout()
-    for dest_path in [DELIVERABLE_IMG / "figure_7_1_flow.png", PAPER_IMG / "figure_7_1_flow.png"]:
+    for dest_path in [DELIVERABLE_IMG / "figure_7_1_flow.png", DELIVERABLE_IMG / "figure_7_2_pipeline_generation.png"]:
         fig.savefig(dest_path, facecolor=fig.get_facecolor(), edgecolor='none')
     plt.close()
-    print("✓ Application Flow Diagram rendered successfully.")
+    print("✓ Figure 7.2 (Pipeline Generation Only Flow) rendered successfully.")
 
 # -------------------------------------------------------------
 # 3. Figure 7.2: SRE Incident Triage & Self-Healing RCA Flow
