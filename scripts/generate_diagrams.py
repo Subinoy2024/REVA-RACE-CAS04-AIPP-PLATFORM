@@ -32,90 +32,167 @@ plt.rcParams['font.family'] = 'sans-serif'
 # 1. Figure 7.1: Master System Architecture
 # -------------------------------------------------------------
 def render_master_architecture():
-    fig, ax = plt.subplots(figsize=(15, 9.5), dpi=300)
-    fig.patch.set_facecolor('#0d1117')
-    ax.set_facecolor('#0d1117')
+    """Render Master System Architecture in clean Diagrams.net / Draw.io enterprise white style."""
+    fig, ax = plt.subplots(figsize=(15, 19), dpi=300)
+    fig.patch.set_facecolor('#FFFFFF')
+    ax.set_facecolor('#FFFFFF')
     ax.set_xlim(0, 15)
-    ax.set_ylim(0, 9.5)
+    ax.set_ylim(0, 19)
     ax.axis('off')
 
-    # Title Banner
-    ax.text(7.5, 9.1, "AIPP — AUTOMATED PIPELINE PLATFORM: MASTER SYSTEM ARCHITECTURE", 
-            fontsize=15, weight='bold', color='#58a6ff', ha='center', va='center')
-    ax.text(7.5, 8.75, "Skill-Scoped Multi-Agent Orchestration · Dual pgvector RAG · Zero-Trust Gateway · 20 n8n AIOps Workflows", 
-            fontsize=9.5, color='#8b949e', ha='center', va='center')
+    # -------------------------------------------------------------
+    # Main Title
+    # -------------------------------------------------------------
+    ax.text(7.5, 18.3, "AIPP — Master System Architecture", 
+            fontsize=18, weight='bold', color='#B22222', ha='center', va='center')
+    ax.text(7.5, 17.9, "Skill-Scoped Multi-Agent CI/CD Synthesis & Autonomous SRE Platform", 
+            fontsize=10, color='#555555', ha='center', va='center')
 
-    def draw_box(x, y, w, h, title, subtitle="", bg="#161b22", border="#30363d", text_col="#c9d1d9", radius=0.15, title_col=None):
+    # Helper functions
+    def draw_box(x, y, w, h, title="", subtitle="", bg="#FFFFFF", border="#2B579A", 
+                 title_col="#003366", text_col="#333333", radius=0.1, lw=1.5, step_num=None):
         rect = patches.FancyBboxPatch((x, y), w, h, boxstyle=f"round,pad={radius}", 
-                                      facecolor=bg, edgecolor=border, linewidth=1.5)
+                                      facecolor=bg, edgecolor=border, linewidth=lw)
         ax.add_patch(rect)
-        if title:
-            tc = title_col or text_col
-            if subtitle:
-                ax.text(x + w/2, y + h*0.62, title, fontsize=9.5, weight='bold', color=tc, ha='center', va='center')
-                ax.text(x + w/2, y + h*0.28, subtitle, fontsize=7.5, color='#8b949e', ha='center', va='center')
-            else:
-                ax.text(x + w/2, y + h/2, title, fontsize=9, weight='bold', color=tc, ha='center', va='center')
+        if step_num:
+            # Draw Step Number Badge
+            badge = patches.Circle((x + 0.35, y + h - 0.35), 0.22, facecolor='#B22222', edgecolor='none')
+            ax.add_patch(badge)
+            ax.text(x + 0.35, y + h - 0.35, str(step_num), color='white', fontsize=9, weight='bold', ha='center', va='center')
+            
+        if title and subtitle:
+            ax.text(x + w/2 + (0.15 if step_num else 0), y + h*0.62, title, fontsize=9.5, weight='bold', color=title_col, ha='center', va='center')
+            ax.text(x + w/2 + (0.15 if step_num else 0), y + h*0.28, subtitle, fontsize=7.8, color=text_col, ha='center', va='center')
+        elif title:
+            ax.text(x + w/2, y + h/2, title, fontsize=9.5, weight='bold', color=title_col, ha='center', va='center')
 
-    # Layer 1: Personas & Interaction
-    draw_box(0.5, 6.9, 3.2, 1.4, "PERSONAS & INTERFACES", "Platform Eng / SRE / Compliance", bg="#1f242c", border="#388bfd", title_col="#58a6ff")
-    draw_box(0.7, 7.0, 1.3, 0.55, "Slack Block-Kit", "HITL Sign-offs", bg="#161b22", border="#7ee787", title_col="#7ee787")
-    draw_box(2.2, 7.0, 1.3, 0.55, "Control Tower", "8-Tab Gradio UI", bg="#161b22", border="#7ee787", title_col="#7ee787")
+    def draw_dashed_group(x, y, w, h, title, border="#666666", bg="#F9FAFB"):
+        rect = patches.FancyBboxPatch((x, y), w, h, boxstyle="square,pad=0.1", 
+                                      facecolor=bg, edgecolor=border, linewidth=1.2, linestyle="--")
+        ax.add_patch(rect)
+        ax.text(x + 0.25, y + h - 0.3, title, fontsize=9, weight='bold', color='#444444', ha='left', va='top')
 
-    # Layer 2: API Gateway & Security Interceptors (Red Boundary)
-    draw_box(4.2, 6.9, 4.2, 1.4, "API GATEWAY & SECURITY", "FastAPI (Async I/O · RBAC)", bg="#1f242c", border="#f85149", title_col="#f85149")
-    draw_box(4.4, 7.0, 1.8, 0.55, "Scope Interceptor", "AST Tool Restriction", bg="#2b1a1f", border="#f85149", title_col="#ff7b72")
-    draw_box(6.4, 7.0, 1.8, 0.55, "Secret-Vault Proxy", "HMAC / Redaction", bg="#2b1a1f", border="#f85149", title_col="#ff7b72")
-
-    # Layer 3: LangGraph Agent Mesh
-    draw_box(8.9, 6.9, 5.6, 1.4, "LANGGRAPH MULTI-AGENT MESH", "8 Specialised Agents (Bounded StateGraph)", bg="#1f242c", border="#a371f7", title_col="#d2a8ff")
-    agents = [("Planner", "RepoAnalyst"), ("Architect", "TechAgent"), ("Generator", "Validator"), ("Deployer", "RCA Doctor")]
-    for idx, (a1, a2) in enumerate(agents):
-        draw_box(9.1 + idx*1.32, 7.0, 1.22, 0.55, f"{a1}\n& {a2}", "", bg="#161b22", border="#8957e5", title_col="#d2a8ff")
-
-    # Layer 4: Dual pgvector RAG & Persistence (Middle Layer)
-    draw_box(0.5, 4.3, 6.8, 2.1, "PERSISTENCE & RETRIEVAL LAYER", "PostgreSQL 15 + pgvector (1536-dim HNSW Indexing)", bg="#161b22", border="#1f6feb", title_col="#58a6ff")
-    draw_box(0.8, 4.5, 2.8, 1.2, "pgvector Similarity Stores", "• Pipeline Templates (cosine)\n• RCA Incident Memory", bg="#0d1117", border="#238636", text_col="#7ee787")
-    draw_box(3.9, 4.5, 3.1, 1.2, "Relational & Audit Data", "• pipeline_runs (State/Cost)\n• audit_logs (Append-Only Trigger)", bg="#0d1117", border="#388bfd", text_col="#79c0ff")
-
-    # Layer 5: Policy Engine & n8n AIOps Engine
-    draw_box(7.7, 4.3, 6.8, 2.1, "INTEGRATION & AUTOMATION SUITE", "20 Production n8n Workflows · Open Policy Agent (OPA)", bg="#161b22", border="#d29922", title_col="#e3b341")
-    draw_box(8.0, 4.5, 3.0, 1.2, "20 n8n AIOps Workflows", "• 00 Error Sink → 19 NetWatcher\n• Auto DOCX Post-Mortem Sync", bg="#0d1117", border="#d29922", text_col="#f2cc60")
-    draw_box(11.2, 4.5, 3.0, 1.2, "12 Rego Policy Packs", "• Zero-Root / CIS Hardening\n• AST Native Syntax Validation", bg="#0d1117", border="#388bfd", text_col="#79c0ff")
-
-    # Layer 6: MCP Adapters & External Target Systems (Bottom Layer)
-    draw_box(0.5, 1.2, 14.0, 2.6, "11 MCP ADAPTERS & EXTERNAL ECOSYSTEM INTEGRATIONS", "Model Context Protocol Tool Protocol", bg="#161b22", border="#30363d", title_col="#58a6ff")
-    
-    mcp_items = [
-        ("CI / CD Targets", "GitHub Actions\nGitLab CI · Tekton\nAzure DevOps · Harness", "#238636", "#7ee787"),
-        ("Live Infrastructure", "Kubernetes (aipp)\nPods, Secrets, Ingress\nPrometheus Alerting", "#1f6feb", "#79c0ff"),
-        ("Multi-Cloud MCP", "AWS Cloud · GCP\nAzure Resource Mgr\nHashiCorp Vault", "#8957e5", "#d2a8ff"),
-        ("Communication & LLM", "Slack Webhook / Socket\nOpenAI GPT-4o-mini\nDeepSeek / Ollama", "#d29922", "#f2cc60"),
-    ]
-    for idx, (title, sub, bc, tc) in enumerate(mcp_items):
-        draw_box(0.9 + idx*3.35, 1.5, 3.0, 1.8, title, sub, bg="#0d1117", border=bc, title_col=tc)
-
-    # Connecting Arrows
-    def draw_arrow(x1, y1, x2, y2, color="#58a6ff", style="->"):
+    def draw_arrow(x1, y1, x2, y2, color="#2B579A", lw=1.8, style="->"):
         ax.annotate("", xy=(x2, y2), xytext=(x1, y1),
-                    arrowprops=dict(arrowstyle=style, color=color, lw=2, mutation_scale=15))
+                    arrowprops=dict(arrowstyle=style, color=color, lw=lw, mutation_scale=14))
 
-    draw_arrow(3.7, 7.6, 4.2, 7.6, "#58a6ff")
-    draw_arrow(8.4, 7.6, 8.9, 7.6, "#58a6ff")
-    draw_arrow(11.5, 6.9, 11.5, 6.4, "#d2a8ff")
-    draw_arrow(4.0, 6.9, 4.0, 6.4, "#58a6ff")
-    draw_arrow(4.0, 4.3, 4.0, 3.8, "#58a6ff")
-    draw_arrow(11.5, 4.3, 11.5, 3.8, "#d29922")
+    # -------------------------------------------------------------
+    # STEP 1: Personas & Interaction (Top Left)
+    # -------------------------------------------------------------
+    draw_box(1.0, 15.6, 4.0, 1.6, "1. User Input & Control Tower", "Platform Engineer / SRE\n8-Tab Gradio UI (Port 3300)", 
+             bg="#F0F4F8", border="#2B579A", title_col="#003366", step_num="1")
 
-    # Legend / Key Note
-    ax.text(7.5, 0.45, "🛡️ Security Boundaries: Red boxes denote AST Scope Enforcement & Zero-Secret Vault Proxy | 100% 20/20 Test Suite Passed", 
-            fontsize=9, color='#7ee787', ha='center', va='center', weight='bold')
+    # STEP 2: FastAPI Gateway & AIPP Security Boundaries (Top Right)
+    draw_dashed_group(6.5, 14.8, 7.5, 2.7, "2. API Gateway & AIPP Security Boundaries", border="#B22222", bg="#FFF5F5")
+    draw_box(6.8, 15.1, 3.2, 1.7, "Scope Interceptor", "AST Tool Restriction\nPer-Agent Skill Scope", 
+             bg="#FFFFFF", border="#D9534F", title_col="#B22222", step_num="2")
+    draw_box(10.4, 15.1, 3.2, 1.7, "Secret-Vault Proxy", "Zero Token Exposure\nHMAC-SHA256 Gateway", 
+             bg="#FFFFFF", border="#D9534F", title_col="#B22222")
+
+    draw_arrow(5.0, 16.4, 6.5, 16.4, color="#003366")
+
+    # -------------------------------------------------------------
+    # STEP 3: Repository Analysis & MCP Ingestion (Middle Left)
+    # -------------------------------------------------------------
+    draw_box(1.0, 12.8, 4.0, 1.6, "3. Zero-Clone Repo Tree", "GitHub / GitLab MCP Ingestion\nDependency Manifest AST", 
+             bg="#F0FFF4", border="#2E7D32", title_col="#1B5E20", step_num="3")
+
+    draw_arrow(8.4, 14.8, 3.0, 14.4, color="#1B5E20")
+
+    # -------------------------------------------------------------
+    # STEP 4: LangGraph 8-Agent State Machine (Center)
+    # -------------------------------------------------------------
+    draw_dashed_group(6.5, 10.4, 7.5, 3.9, "4. LangGraph Multi-Agent State Machine (AIPPState)", border="#5E35B1", bg="#F8F5FC")
+    
+    agents = [
+        ("Tech Detection Agent", "Runtime / Build Classifier"),
+        ("Architecture Agent", "Monolith / Microservice / Monorepo"),
+        ("Pipeline Planning Agent", "DAG Stage & Gate Planner"),
+        ("Environment Agent", "Dev / Staging / Prod Target Config"),
+        ("Pipeline Generator Agent", "Deterministic AST Template Engine"),
+        ("Pipeline Validation Agent", "4 Verification Gates + Self-Healing")
+    ]
+    for idx, (t, s) in enumerate(agents):
+        row = idx // 2
+        col = idx % 2
+        draw_box(6.8 + col*3.6, 12.7 - row*1.1, 3.3, 0.95, t, s, 
+                 bg="#FFFFFF", border="#7E57C2", title_col="#4527A0")
+
+    draw_arrow(5.0, 13.6, 6.5, 13.6, color="#4527A0")
+
+    # -------------------------------------------------------------
+    # STEP 5: Dual pgvector RAG & Persistence Store (Middle)
+    # -------------------------------------------------------------
+    draw_dashed_group(1.0, 8.8, 4.6, 3.4, "5. PostgreSQL 15 + pgvector Memory", border="#00695C", bg="#E0F2F1")
+    draw_box(1.3, 10.5, 4.0, 1.2, "pgvector Semantic Store", "1536-dim HNSW Cosine Index\nTop-3 Golden Pipeline RAG", 
+             bg="#FFFFFF", border="#00897B", title_col="#004D40", step_num="5")
+    draw_box(1.3, 9.1, 4.0, 1.2, "Relational Audit Ledger", "audit_logs (Immutable Trigger)\npipeline_runs & Telemetry", 
+             bg="#FFFFFF", border="#00897B", title_col="#004D40")
+
+    draw_arrow(6.5, 11.2, 5.6, 11.2, color="#004D40")
+
+    # -------------------------------------------------------------
+    # STEP 6: Policy Engine & AST Validation (Right Middle)
+    # -------------------------------------------------------------
+    draw_box(6.8, 8.6, 3.3, 1.3, "6. 12 OPA Rego Policies", "Zero-Root Container Check\nCIS Security Hardening", 
+             bg="#FFFDE7", border="#FBC02D", title_col="#F57F17", step_num="6")
+    draw_box(10.5, 8.6, 3.2, 1.3, "Self-Healing Retry", "AST Error Diagnostics\nMax 2 Healing Passes", 
+             bg="#FFFDE7", border="#FBC02D", title_col="#F57F17")
+
+    draw_arrow(10.25, 10.4, 8.45, 9.9, color="#F57F17")
+    draw_arrow(8.45, 9.9, 10.5, 9.25, color="#F57F17")
+
+    # -------------------------------------------------------------
+    # STEP 7: Slack HITL Approval Gate (Bottom Left / Center)
+    # -------------------------------------------------------------
+    draw_box(1.0, 6.2, 4.6, 1.8, "7. Slack Block-Kit HITL Gate", "Interactive Deploy Approval Card\nHMAC-SHA256 Cryptographic Sign-Off", 
+             bg="#EDE7F6", border="#512DA8", title_col="#311B92", step_num="7")
+
+    draw_arrow(8.45, 8.6, 3.3, 8.0, color="#311B92")
+
+    # -------------------------------------------------------------
+    # STEP 8: SRE Automation Suite & Multi-Cloud Deployment
+    # -------------------------------------------------------------
+    draw_dashed_group(6.5, 5.0, 7.5, 3.1, "8. Autonomous AIOps & Incident Doctor", border="#E65100", bg="#FFF3E0")
+    draw_box(6.8, 6.3, 3.3, 1.4, "20 n8n SRE Workflows", "Live Incident Routing\nAuto-Remediation Hooks", 
+             bg="#FFFFFF", border="#FB8C00", title_col="#E65100", step_num="8")
+    draw_box(10.4, 6.3, 3.3, 1.4, "PipelineDoctor Agent", "Log Line Grounding (L001-L1500)\nAuto DOCX SOP Generation", 
+             bg="#FFFFFF", border="#FB8C00", title_col="#E65100")
+    draw_box(6.8, 5.2, 6.9, 0.9, "pgvector RCA Long-Term Memory", "F1 = 0.898 with warm memory (49 prior incidents)", 
+             bg="#FFF8E1", border="#FFA000", title_col="#FF6F00")
+
+    draw_arrow(3.3, 6.2, 6.8, 5.8, color="#E65100")
+
+    # -------------------------------------------------------------
+    # EXTERNAL ECOSYSTEM & MCP ADAPTERS (Bottom Container)
+    # -------------------------------------------------------------
+    draw_dashed_group(1.0, 1.5, 13.0, 3.0, "11 Model Context Protocol (MCP) Adapters & Target Multi-Cloud Infrastructure", 
+                      border="#37474F", bg="#ECEFF1")
+    
+    eco_items = [
+        ("Source Control (VCS)", "GitHub · GitLab\nZero-Clone Trees", "#1B5E20", "#2E7D32"),
+        ("Target CI/CD Engines", "GitHub Actions · GitLab CI\nAzure DevOps · Tekton · Harness", "#0D47A1", "#1565C0"),
+        ("Live Multi-Cloud & K8s", "AWS EKS · Azure AKS · GCP Run\nLocal K8s (aipp node)", "#311B92", "#4527A0"),
+        ("Foundation AI Models", "OpenAI gpt-4o-mini\nClaude 3.5 Sonnet / Ollama", "#BF360C", "#D84315")
+    ]
+    for idx, (title, sub, bc, tc) in enumerate(eco_items):
+        draw_box(1.3 + idx*3.1, 1.8, 2.9, 2.2, title, sub, bg="#FFFFFF", border=bc, title_col=tc)
+
+    draw_arrow(3.3, 6.2, 4.2, 4.5, color="#37474F")
+    draw_arrow(8.5, 5.0, 8.5, 4.5, color="#37474F")
+
+    # -------------------------------------------------------------
+    # Bottom Legend / Footer Box
+    # -------------------------------------------------------------
+    draw_dashed_group(1.0, 0.3, 13.0, 0.9, "Legend & Security Boundaries", border="#888888", bg="#FAFAFA")
+    ax.text(1.3, 0.65, "🔴 Red Nodes: AIPP Security Boundaries (Scope Interceptor & Secret-Vault Proxy)  |  Numbered Badges (1-8): Traceable End-to-End Execution Flow", 
+            fontsize=8.5, color='#333333', va='center')
 
     plt.tight_layout()
-    for dest_path in [DELIVERABLE_IMG / "figure_7_0.png", PAPER_IMG / "figure_7_0.png", DELIVERABLE_IMG / "architecture_slide.png"]:
+    for dest_path in [DELIVERABLE_IMG / "figure_7_0.png", DELIVERABLE_IMG / "architecture_slide.png"]:
         fig.savefig(dest_path, facecolor=fig.get_facecolor(), edgecolor='none')
     plt.close()
-    print("✓ Master System Architecture rendered successfully.")
+    print("✓ Master System Architecture (White Diagrams.net Style) rendered successfully.")
 
 # -------------------------------------------------------------
 # 2. Figure 7.1 Flow: End-to-End Application Workflow Diagram
