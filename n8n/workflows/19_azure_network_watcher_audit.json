@@ -3,19 +3,17 @@
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "0 * * * *"
-            }
-          ]
+        "httpMethod": "POST",
+        "path": "aipp-network-watcher",
+        "responseMode": "onReceived",
+        "options": {
+          "responseData": "allEntries"
         }
       },
-      "id": "1b76164f-1ad0-5954-a10d-adc63040a23a",
-      "name": "Hourly VNet Audit",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.1,
+      "id": "01bc2d32-4963-5bd9-9cf2-554493f54ae7",
+      "name": "AIPP \u00b7 Network Watcher Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.0,
       "position": [
         200,
         300
@@ -171,7 +169,7 @@
     }
   ],
   "connections": {
-    "Hourly VNet Audit": {
+    "AIPP \u00b7 Network Watcher Trigger": {
       "main": [
         [
           {

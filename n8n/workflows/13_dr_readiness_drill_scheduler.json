@@ -3,19 +3,17 @@
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "0 2 15 1,4,7,10 *"
-            }
-          ]
+        "httpMethod": "POST",
+        "path": "aipp-dr-drill",
+        "responseMode": "onReceived",
+        "options": {
+          "responseData": "allEntries"
         }
       },
-      "id": "10e2942c-9adf-5648-a6ad-25e5c871940e",
-      "name": "Quarterly",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.1,
+      "id": "b1a2d999-e4e8-5265-9484-21a5fa7494cd",
+      "name": "AIPP \u00b7 DR Drill Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.0,
       "position": [
         200,
         300
@@ -421,7 +419,7 @@
     }
   ],
   "connections": {
-    "Quarterly": {
+    "AIPP \u00b7 DR Drill Trigger": {
       "main": [
         [
           {

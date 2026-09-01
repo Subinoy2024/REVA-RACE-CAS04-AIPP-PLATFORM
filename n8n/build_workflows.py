@@ -976,9 +976,9 @@ def wf_01_subscription_vending() -> dict:
 
 
 def wf_02_iac_drift() -> dict:
-    """Daily IaC drift detector — fetches .tf files from GitHub, LLM analyses."""
+    """IaC drift detector (Manual / Webhook Trigger) — fetches .tf files from GitHub, LLM analyses."""
     nodes = [
-        schedule_trigger("Daily 03:00", "0 3 * * *", (200, 300)),
+        webhook_trigger("AIPP · IaC Drift Trigger", "aipp-iac-drift", (200, 300)),
         trace_init_node((380, 300)),
         aipp_call(
             "GitHub · List .tf files",
@@ -1028,9 +1028,9 @@ def wf_02_iac_drift() -> dict:
 
 
 def wf_03_access_review() -> dict:
-    """Quarterly GH org membership → LLM ranks risk → per-manager Slack digest."""
+    """Access review automator (Manual / Webhook Trigger) — GH org membership → LLM ranks risk → Slack digest."""
     nodes = [
-        schedule_trigger("Quarterly", "0 9 1 1,4,7,10 *", (200, 300)),
+        webhook_trigger("AIPP · Access Review Trigger", "aipp-access-review", (200, 300)),
         trace_init_node((380, 300)),
         aipp_call(
             "GitHub · List Org Members",
@@ -1174,15 +1174,9 @@ def wf_04_self_service() -> dict:
 
 
 def wf_05_pipeline_digest() -> dict:
-    """Every 30 min: count running/failed across ADO + GH Actions.
-
-    ADO is a required backend — an operator-configured pipeline observability
-    story. `ADO_ORG` / `ADO_PROJECT` / `ADO_PAT` must all be set in
-    `.env.n8n`. If any is missing the ADO HTTP call will fail and be
-    surfaced by the Error Sink workflow — that is the intended behaviour.
-    """
+    """Pipeline status digest (Manual / Webhook Trigger): count running/failed across ADO + GH Actions."""
     nodes = [
-        schedule_trigger("Every 30 min", "*/30 * * * *", (200, 300)),
+        webhook_trigger("AIPP · Pipeline Digest Trigger", "aipp-pipeline-digest", (200, 300)),
         trace_init_node((380, 300)),
         aipp_call(
             "ADO · List Runs",
@@ -1216,7 +1210,7 @@ def wf_05_pipeline_digest() -> dict:
                                "...(($('GitHub · List Actions Runs').item.json.workflow_runs) || [])"
                                ".filter(r => r.conclusion === 'failure').map(r => r.name)]"
                                ".slice(0, 5) }}"),
-                     "type": "array"},
+                      "type": "array"},
                 ]},
                 "includeOtherFields": False,
                 "options": {},
@@ -1234,7 +1228,7 @@ def wf_05_pipeline_digest() -> dict:
         ),
     ]
     conns = {
-        "Every 30 min": {"main": [[{"node": "Init Trace", "type": "main", "index": 0}]]},
+        "AIPP · Pipeline Digest Trigger": {"main": [[{"node": "Init Trace", "type": "main", "index": 0}]]},
         "Init Trace": {"main": [[
             {"node": "ADO · List Runs", "type": "main", "index": 0},
             {"node": "GitHub · List Actions Runs", "type": "main", "index": 0},
@@ -1247,9 +1241,9 @@ def wf_05_pipeline_digest() -> dict:
 
 
 def wf_06_k8s_health() -> dict:
-    """Daily K8s scorecard from pod list."""
+    """K8s health scorecard (Manual / Webhook Trigger) from live pod list."""
     nodes = [
-        schedule_trigger("Daily 07:00", "0 7 * * *", (200, 300)),
+        webhook_trigger("AIPP · K8s Health Trigger", "aipp-k8s-health", (200, 300)),
         trace_init_node((380, 300)),
         aipp_call("K8s · List Pods",
                   "GET", "/k8s/pods", None, (560, 300)),
@@ -1589,9 +1583,9 @@ def wf_08_grafana_autofix() -> dict:
 
 
 def wf_09_azure_cost() -> dict:
-    """Weekly Azure Cost narrative → Slack. Skips silently if Azure unconfigured."""
+    """Azure Cost review (Manual / Webhook Trigger) → Slack. Skips silently if Azure unconfigured."""
     nodes = [
-        schedule_trigger("Weekly Monday 09:00", "0 9 * * 1", (200, 300)),
+        webhook_trigger("AIPP · Azure Cost Review Trigger", "aipp-azure-cost", (200, 300)),
         trace_init_node((380, 300)),
         azure_gate_node((560, 300)),
         azure_token_node((740, 220)),
@@ -1626,7 +1620,7 @@ def wf_09_azure_cost() -> dict:
         ),
     ]
     conns = {
-        "Weekly Monday 09:00": {"main": [[{"node": "Init Trace", "type": "main", "index": 0}]]},
+        "AIPP · Azure Cost Review Trigger": {"main": [[{"node": "Init Trace", "type": "main", "index": 0}]]},
         "Init Trace": {"main": [[{"node": "Azure Configured?", "type": "main", "index": 0}]]},
         "Azure Configured?": {"main": [
             [{"node": "Azure · Get Token", "type": "main", "index": 0}],
@@ -1876,10 +1870,9 @@ def wf_11_sop_generator() -> dict:
 
 
 def wf_12_slo_burn() -> dict:
-    """Azure Monitor SLO burn-rate → LLM decides page/ticket/silent → Slack.
-    Skips silently if Azure unconfigured."""
+    """Azure Monitor SLO burn-rate (Manual / Webhook Trigger) → LLM decides page/ticket/silent → Slack."""
     nodes = [
-        schedule_trigger("Every 5 min", "*/5 * * * *", (200, 300)),
+        webhook_trigger("AIPP · SLO Burn Monitor Trigger", "aipp-slo-burn", (200, 300)),
         trace_init_node((380, 300)),
         azure_gate_node((560, 300)),
         azure_token_node((740, 220)),
@@ -1910,7 +1903,7 @@ def wf_12_slo_burn() -> dict:
         ),
     ]
     conns = {
-        "Every 5 min": {"main": [[{"node": "Init Trace", "type": "main", "index": 0}]]},
+        "AIPP · SLO Burn Monitor Trigger": {"main": [[{"node": "Init Trace", "type": "main", "index": 0}]]},
         "Init Trace": {"main": [[{"node": "Azure Configured?", "type": "main", "index": 0}]]},
         "Azure Configured?": {"main": [
             [{"node": "Azure · Get Token", "type": "main", "index": 0}],
@@ -1924,9 +1917,9 @@ def wf_12_slo_burn() -> dict:
 
 
 def wf_13_dr_drill() -> dict:
-    """Quarterly DR drill scheduler with HITL. Skips silently if Azure unconfigured."""
+    """DR drill scheduler (Manual / Webhook Trigger) with HITL. Skips silently if Azure unconfigured."""
     nodes = [
-        schedule_trigger("Quarterly", "0 2 15 1,4,7,10 *", (200, 300)),
+        webhook_trigger("AIPP · DR Drill Trigger", "aipp-dr-drill", (200, 300)),
         trace_init_node((380, 300)),
         azure_gate_node((560, 300)),
         azure_token_node((740, 220)),
@@ -1982,7 +1975,7 @@ def wf_13_dr_drill() -> dict:
         ),
     ]
     conns = {
-        "Quarterly": {"main": [[{"node": "Init Trace", "type": "main", "index": 0}]]},
+        "AIPP · DR Drill Trigger": {"main": [[{"node": "Init Trace", "type": "main", "index": 0}]]},
         "Init Trace": {"main": [[{"node": "Azure Configured?", "type": "main", "index": 0}]]},
         "Azure Configured?": {"main": [
             [{"node": "Azure · Get Token", "type": "main", "index": 0}],
@@ -2080,10 +2073,10 @@ def wf_14_chaos() -> dict:
 
 
 def wf_15_log_anomaly() -> dict:
-    """Hourly KQL anomaly hunt → LLM classifies → Slack card.
+    """Manual/Webhook KQL anomaly hunt → LLM classifies → Slack card.
     Skips silently if Azure unconfigured."""
     nodes = [
-        schedule_trigger("Hourly", "0 * * * *", (200, 300)),
+        webhook_trigger("AIPP · Log Anomaly Trigger", "aipp-log-anomaly", (200, 300)),
         trace_init_node((380, 300)),
         azure_gate_node((560, 300)),
         azure_token_node((740, 220)),
@@ -2116,7 +2109,7 @@ def wf_15_log_anomaly() -> dict:
         ),
     ]
     conns = {
-        "Hourly": {"main": [[{"node": "Init Trace", "type": "main", "index": 0}]]},
+        "AIPP · Log Anomaly Trigger": {"main": [[{"node": "Init Trace", "type": "main", "index": 0}]]},
         "Init Trace": {"main": [[{"node": "Azure Configured?", "type": "main", "index": 0}]]},
         "Azure Configured?": {"main": [
             [{"node": "Azure · Get Token", "type": "main", "index": 0}],
@@ -2195,9 +2188,9 @@ def wf_16_pipeline_review() -> dict:
 
 
 def wf_17_azure_vm_monitor() -> dict:
-    """Azure VM CPU & Memory Health Monitor & Auto-Healer."""
+    """Azure VM CPU & Memory Health Monitor & Auto-Healer (Manual / Webhook Trigger)."""
     nodes = [
-        schedule_trigger("Every 15m VM Check", "*/15 * * * *", (200, 300)),
+        webhook_trigger("AIPP · Azure VM Health Trigger", "aipp-vm-health", (200, 300)),
         trace_init_node((380, 300)),
         aipp_call("Azure · List Resource Groups", "GET", "/k8s/pods?ns=aipp", None, (560, 300)),
         llm_node(
@@ -2223,9 +2216,9 @@ def wf_17_azure_vm_monitor() -> dict:
 
 
 def wf_18_azure_storage_monitor() -> dict:
-    """Azure Storage Account Capacity & IOPS Throttling Monitor."""
+    """Azure Storage Account Capacity & IOPS Throttling Monitor (Manual / Webhook Trigger)."""
     nodes = [
-        schedule_trigger("Every 30m Storage Check", "*/30 * * * *", (200, 300)),
+        webhook_trigger("AIPP · Azure Storage Trigger", "aipp-storage-monitor", (200, 300)),
         trace_init_node((380, 300)),
         aipp_call("Azure · List Storage Accounts", "GET", "/k8s/pods?ns=aipp", None, (560, 300)),
         llm_node(
@@ -2250,9 +2243,9 @@ def wf_18_azure_storage_monitor() -> dict:
 
 
 def wf_19_azure_network_watcher() -> dict:
-    """Azure Network Watcher & VNet Security Audit."""
+    """Azure Network Watcher & VNet Security Audit (Manual / Webhook Trigger)."""
     nodes = [
-        schedule_trigger("Hourly VNet Audit", "0 * * * *", (200, 300)),
+        webhook_trigger("AIPP · Network Watcher Trigger", "aipp-network-watcher", (200, 300)),
         trace_init_node((380, 300)),
         aipp_call("Azure · List Network Watchers", "GET", "/k8s/pods?ns=aipp", None, (560, 300)),
         llm_node(

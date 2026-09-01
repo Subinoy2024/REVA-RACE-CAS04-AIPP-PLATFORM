@@ -3,19 +3,17 @@
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "*/15 * * * *"
-            }
-          ]
+        "httpMethod": "POST",
+        "path": "aipp-vm-health",
+        "responseMode": "onReceived",
+        "options": {
+          "responseData": "allEntries"
         }
       },
-      "id": "f07f3e87-d248-5a06-ac1e-32c6a10515de",
-      "name": "Every 15m VM Check",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.1,
+      "id": "0168ab78-b754-5823-89b6-b7ac76376ffc",
+      "name": "AIPP \u00b7 Azure VM Health Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.0,
       "position": [
         200,
         300
@@ -171,7 +169,7 @@
     }
   ],
   "connections": {
-    "Every 15m VM Check": {
+    "AIPP \u00b7 Azure VM Health Trigger": {
       "main": [
         [
           {

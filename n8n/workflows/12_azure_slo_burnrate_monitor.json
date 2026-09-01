@@ -3,19 +3,17 @@
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "*/5 * * * *"
-            }
-          ]
+        "httpMethod": "POST",
+        "path": "aipp-slo-burn",
+        "responseMode": "onReceived",
+        "options": {
+          "responseData": "allEntries"
         }
       },
-      "id": "9ab20c00-4bf7-5d2e-8041-67442eab120b",
-      "name": "Every 5 min",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.1,
+      "id": "6fe30cdf-0131-5fae-89b3-c6a78e222855",
+      "name": "AIPP \u00b7 SLO Burn Monitor Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.0,
       "position": [
         200,
         300
@@ -240,7 +238,7 @@
     }
   ],
   "connections": {
-    "Every 5 min": {
+    "AIPP \u00b7 SLO Burn Monitor Trigger": {
       "main": [
         [
           {

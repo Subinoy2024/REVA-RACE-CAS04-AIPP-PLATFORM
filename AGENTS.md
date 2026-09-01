@@ -45,6 +45,7 @@ This document provides context, architectural boundaries, verified milestones, r
 
 | Purpose | Command | Notes |
 | :--- | :--- | :--- |
+| **Sync .env to Live K8s** | `bash scripts/sync_secrets_to_k8s.sh` | Pushes updated keys from `.env` to K8s & reloads backend |
 | **Run Chaos Test Suite** | `python3 scripts/test_all_workflows_chaos.py` | Queries live `aipp` pods; tests 20 workflows |
 | **Rebuild All 20 n8n Workflows** | `python3 n8n/build_workflows.py` | Emits JSONs to `n8n/workflows/` |
 | **Deploy Workflows to Live n8n** | `bash n8n/scripts/deploy.sh --activate-all` | Pushes to `https://n8n.dccloud.in.net` |

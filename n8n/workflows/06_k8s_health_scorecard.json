@@ -3,19 +3,17 @@
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "0 7 * * *"
-            }
-          ]
+        "httpMethod": "POST",
+        "path": "aipp-k8s-health",
+        "responseMode": "onReceived",
+        "options": {
+          "responseData": "allEntries"
         }
       },
-      "id": "47a8dd3a-68a4-560c-aa8d-1143c28cc09f",
-      "name": "Daily 07:00",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.1,
+      "id": "a97b491f-1765-59bc-884a-3506fcd771e5",
+      "name": "AIPP \u00b7 K8s Health Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.0,
       "position": [
         200,
         300
@@ -171,7 +169,7 @@
     }
   ],
   "connections": {
-    "Daily 07:00": {
+    "AIPP \u00b7 K8s Health Trigger": {
       "main": [
         [
           {

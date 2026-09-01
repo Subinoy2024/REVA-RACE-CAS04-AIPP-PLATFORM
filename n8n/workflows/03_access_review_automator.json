@@ -3,19 +3,17 @@
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "0 9 1 1,4,7,10 *"
-            }
-          ]
+        "httpMethod": "POST",
+        "path": "aipp-access-review",
+        "responseMode": "onReceived",
+        "options": {
+          "responseData": "allEntries"
         }
       },
-      "id": "10e2942c-9adf-5648-a6ad-25e5c871940e",
-      "name": "Quarterly",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.1,
+      "id": "128b8187-a01e-545a-9c91-7225da07b59b",
+      "name": "AIPP \u00b7 Access Review Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.0,
       "position": [
         200,
         300
@@ -171,7 +169,7 @@
     }
   ],
   "connections": {
-    "Quarterly": {
+    "AIPP \u00b7 Access Review Trigger": {
       "main": [
         [
           {

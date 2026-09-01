@@ -3,19 +3,17 @@
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "*/30 * * * *"
-            }
-          ]
+        "httpMethod": "POST",
+        "path": "aipp-pipeline-digest",
+        "responseMode": "onReceived",
+        "options": {
+          "responseData": "allEntries"
         }
       },
-      "id": "80864982-49e9-5fde-8750-51572c107b90",
-      "name": "Every 30 min",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.1,
+      "id": "cb16c2ba-fc3e-51f5-b011-96becafa510f",
+      "name": "AIPP \u00b7 Pipeline Digest Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.0,
       "position": [
         200,
         300
@@ -203,7 +201,7 @@
     }
   ],
   "connections": {
-    "Every 30 min": {
+    "AIPP \u00b7 Pipeline Digest Trigger": {
       "main": [
         [
           {

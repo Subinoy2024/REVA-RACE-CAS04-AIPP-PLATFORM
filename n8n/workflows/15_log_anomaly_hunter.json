@@ -3,19 +3,17 @@
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "0 * * * *"
-            }
-          ]
+        "httpMethod": "POST",
+        "path": "aipp-log-anomaly",
+        "responseMode": "onReceived",
+        "options": {
+          "responseData": "allEntries"
         }
       },
-      "id": "53e6d8a0-a061-5739-98db-01073b8acbd2",
-      "name": "Hourly",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.1,
+      "id": "587c9c44-f343-585b-9475-c38cc3e1c971",
+      "name": "AIPP \u00b7 Log Anomaly Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.0,
       "position": [
         200,
         300
@@ -242,7 +240,7 @@
     }
   ],
   "connections": {
-    "Hourly": {
+    "AIPP \u00b7 Log Anomaly Trigger": {
       "main": [
         [
           {

@@ -3,19 +3,17 @@
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "0 3 * * *"
-            }
-          ]
+        "httpMethod": "POST",
+        "path": "aipp-iac-drift",
+        "responseMode": "onReceived",
+        "options": {
+          "responseData": "allEntries"
         }
       },
-      "id": "93827f73-0440-5373-8c07-1a2d3f8cb414",
-      "name": "Daily 03:00",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.1,
+      "id": "12105025-5585-5762-94d0-5ccfa0737e0e",
+      "name": "AIPP \u00b7 IaC Drift Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.0,
       "position": [
         200,
         300
@@ -202,7 +200,7 @@
     }
   ],
   "connections": {
-    "Daily 03:00": {
+    "AIPP \u00b7 IaC Drift Trigger": {
       "main": [
         [
           {

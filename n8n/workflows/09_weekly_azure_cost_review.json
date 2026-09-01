@@ -3,19 +3,17 @@
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "0 9 * * 1"
-            }
-          ]
+        "httpMethod": "POST",
+        "path": "aipp-azure-cost",
+        "responseMode": "onReceived",
+        "options": {
+          "responseData": "allEntries"
         }
       },
-      "id": "5b3cebb8-712f-5ff9-b037-bd88a44a1529",
-      "name": "Weekly Monday 09:00",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.1,
+      "id": "2f898f9b-93c0-56e0-ac56-454fb19c0bb4",
+      "name": "AIPP \u00b7 Azure Cost Review Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.0,
       "position": [
         200,
         300
@@ -242,7 +240,7 @@
     }
   ],
   "connections": {
-    "Weekly Monday 09:00": {
+    "AIPP \u00b7 Azure Cost Review Trigger": {
       "main": [
         [
           {

@@ -3,19 +3,17 @@
   "nodes": [
     {
       "parameters": {
-        "rule": {
-          "interval": [
-            {
-              "field": "cronExpression",
-              "expression": "*/30 * * * *"
-            }
-          ]
+        "httpMethod": "POST",
+        "path": "aipp-storage-monitor",
+        "responseMode": "onReceived",
+        "options": {
+          "responseData": "allEntries"
         }
       },
-      "id": "c3588ef2-eb1b-551f-84c3-927014e89179",
-      "name": "Every 30m Storage Check",
-      "type": "n8n-nodes-base.scheduleTrigger",
-      "typeVersion": 1.1,
+      "id": "fb3e88f4-44a5-5591-985d-ebfafe977034",
+      "name": "AIPP \u00b7 Azure Storage Trigger",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.0,
       "position": [
         200,
         300
@@ -171,7 +169,7 @@
     }
   ],
   "connections": {
-    "Every 30m Storage Check": {
+    "AIPP \u00b7 Azure Storage Trigger": {
       "main": [
         [
           {
