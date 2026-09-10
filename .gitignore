@@ -82,7 +82,15 @@ scratch/
 *.tmp
 tmp/
 
-# Final Deliverables
+# Final Deliverables & Artifacts
 final_deliverable/
 
+# Project Reports, Documentation & Presentation Decks
+Project_Report_Main/
+project_report*/
+docs/
+doc/
 
+# Agent Guidelines & Local AI Specs
+AGENTS.md
+Agent.md
