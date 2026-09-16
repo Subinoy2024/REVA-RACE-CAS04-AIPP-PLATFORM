@@ -14,6 +14,8 @@ from fastapi import APIRouter
 router = APIRouter(prefix="/api/policy", tags=["policy"])
 
 _ROOT = Path("/app/policy")
+if not _ROOT.is_dir():
+    _ROOT = Path(__file__).resolve().parent.parent.parent / "policy"
 
 
 @router.get("/bundle")

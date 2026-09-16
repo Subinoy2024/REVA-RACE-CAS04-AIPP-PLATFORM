@@ -23,6 +23,7 @@ RUN pip install -r /app/backend/requirements.txt \
 
 COPY backend  /app/backend
 COPY frontend /app/frontend
+COPY policy   /app/policy
 
 EXPOSE 8001 3000
 
