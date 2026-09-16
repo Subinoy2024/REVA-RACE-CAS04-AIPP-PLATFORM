@@ -5,6 +5,42 @@ adheres to [Semantic Versioning](https://semver.org/) and the
 [Keep a Changelog](https://keepachangelog.com/) format.
 
 
+## [0.39.2] — 2026-09-09 · End-to-End Presentation, Report & Application Synchronization
+
+### Deliverables & Master Presentation Alignment
+- **1-to-1 Tab Structure Alignment Across App, Report & Deck**: Strictly synchronized the slide deck's UI walkthrough (Slides 18–23) with the live Control Tower (`http://aipp.dccloud.com`) and Chapter 8 of the Capstone Report:
+  - **Slide 18**: Multi-Cloud Pipeline Generator (Control Tower Tab 1)
+  - **Slide 19**: PipelineDoctor Evidence-Anchored RCA (Control Tower Tab 2)
+  - **Slide 20**: Agent Trace & Dynamic Directive Handling (Control Tower Tab 8)
+  - **Slide 21**: 20 n8n SRE & AI-Ops Workflows (Control Tower Tab 4)
+  - **Slide 22**: Cryptographically Verified Slack HITL (Control Tower Tab 5)
+  - **Slide 23**: End-to-End Control Tower Walkthrough covering all operator tabs (Tabs 1–8) in precise chronological order.
+- **Master Deliverables Recompiled**: Recompiled all four presentation targets (`Project_Report_Main/4_CAS_Batch No_...pptx`, `final_deliverable/C_Capstone Project_Final PPT_Subinoy_Debnath_AIPP_Feb_2026.pptx`, `final_deliverable/C_Capstone Project_Final PPT_Name_...pptx`, and `docs/AIPP_Capstone_Deck.pptx`).
+
+## [0.39.1] — 2026-09-09 · Master Viva Presentation Deck (36 Visual Slides with Live Snapshots)
+
+### Deliverables & Presentation Deck
+- **Definitive 36-Slide REVA RACE Master Deck**: Generated [`Project_Report_Main/4_CAS_Batch No_Capstone Project_Final PPT_Name_Capstone Short Title_Oct_2025 (2).pptx`](file:///Users/subdebna/CAS-04-MS-SUBINOY-AIPP/REVA-RACE-CAS04-AIPP-PLATFORM/Project_Report_Main/4_CAS_Batch%20No_Capstone%20Project_Final%20PPT_Name_Capstone%20Short%20Title_Oct_2025%20(2).pptx) (4.25 MB), [`final_deliverable/C_Capstone Project_Final PPT_Subinoy_Debnath_AIPP_Feb_2026.pptx`](file:///Users/subdebna/CAS-04-MS-SUBINOY-AIPP/REVA-RACE-CAS04-AIPP-PLATFORM/final_deliverable/C_Capstone%20Project_Final%20PPT_Subinoy_Debnath_AIPP_Feb_2026.pptx), and [`docs/AIPP_Capstone_Deck.pptx`](file:///Users/subdebna/CAS-04-MS-SUBINOY-AIPP/REVA-RACE-CAS04-AIPP-PLATFORM/docs/AIPP_Capstone_Deck.pptx).
+- **Embedded Real Application Snapshots & Modern Architecture**: Integrated 13 high-resolution assets including Tab 1 (Pipeline Generator), Tab 2 (Execution Trace), Tab 3 (PipelineDoctor RCA), Tab 4 (20 n8n SRE Workflows), Tab 5 (Slack HITL Approval Card), Live Kubernetes Cluster telemetry (`dck8snode2`), Agora Methodology (Figure 5.1), Master Hero Architecture (Figure 7.0), Agent State Machine FSM (Figure 7.6), and PostgreSQL 15 / pgvector Dual Memory ER Schema (Figure 7.7).
+- **Reviewer Feedback Revisions Grounded**: Embedded dedicated audit and scorecard slides addressing all 9 reviewer feedback items (8 canonical agents from `registry.py`, 7-node DAG decomposition, 12 OPA Rego policies across AWS/Azure/GCP, Wilson score 95% CI `[83.9%, 100%]`, multi-trial latency variance `26.24s ± 2.18s`, literature grounding in HumanEval/Xia APR/Gao RAG/Nielsen HCI, and standardized IEEE citations `[1]`–`[23]`).
+- **Visual Design Standard**: Formatted with high-contrast card containers, prominent callout badges, bold lead-in keywords on bullet points for rapid viva defense, and strict compliance with REVA RACE University presentation guidelines.
+
+## [0.39.0] — 2026-09-08 · Single-Stage Pipeline Generation & Dynamic Directive Handling
+
+### Added & Improved
+- **Single-Stage Pipeline Directive Support**: Added deterministic parsing for `without multistage`, `no multistage`, `single stage`, `single job`, and `flat pipeline` directives in [`backend/generators/base.py`](file:///Users/subdebna/CAS-04-MS-SUBINOY-AIPP/REVA-RACE-CAS04-AIPP-PLATFORM/backend/generators/base.py).
+- **Consolidated Single-Stage YAML Generation**: Updated [`backend/generators/azure_devops.py`](file:///Users/subdebna/CAS-04-MS-SUBINOY-AIPP/REVA-RACE-CAS04-AIPP-PLATFORM/backend/generators/azure_devops.py) to dynamically collapse multi-stage pipelines into a flat, single-stage execution flow (`jobs: - job: continuous_delivery ...`) when requested, deduplicating checkouts and preserving all security/build/deploy gates.
+- **Platform Validator Support**: Updated [`backend/validators/platform_validator.py`](file:///Users/subdebna/CAS-04-MS-SUBINOY-AIPP/REVA-RACE-CAS04-AIPP-PLATFORM/backend/validators/platform_validator.py) to accept both `jobs` and `stages` top-level schemas for Azure DevOps.
+- **Eliminated False Directive Errors**: Updated [`frontend/tabs/pipeline_generator.py`](file:///Users/subdebna/CAS-04-MS-SUBINOY-AIPP/REVA-RACE-CAS04-AIPP-PLATFORM/frontend/tabs/pipeline_generator.py) so general custom requirements evaluated by the AI Planning Agent display `ℹ️ Custom requirement evaluated and addressed by AI Planning Agent` rather than alarming red `❌` errors.
+- **Live Kubernetes Cluster Hotfix**: Created `aipp-generator-fix` ConfigMap and updated deployments `aipp-backend` and `aipp-frontend` in namespace `aipp`.
+
+## [0.38.1] — 2026-09-07 · Capstone Report Chapter 8 Structural & Readability Refinement
+
+### Documentation & Report
+- **Implementation Sections Restructuring (§8.1 & §8.2)**: Separated every implementation component's `**What was built.**` and architectural rationale `**Why [X].**` into dedicated, visual paragraphs across all 11 implementation subsections (§8.1.1–§8.1.8 and §8.2.1–§8.2.3).
+- **Academic Sentence Structuring Refinement**: Polished the introductory prose for Objective 2 (§8.1) and Objective 5 (§8.2) to formal academic standards and corrected subsection cross-references.
+- **Recompiled Master Deliverables**: Regenerated [`final_deliverable/01_AIPP_Capstone_Project_Final_Report.docx`](file:///Users/subdebna/CAS-04-MS-SUBINOY-AIPP/REVA-RACE-CAS04-AIPP-PLATFORM/final_deliverable/01_AIPP_Capstone_Project_Final_Report.docx) via `convert_paper.py` (3.22 MB).
+
 ## [0.37.1] — 2026-08-28 · Live Infrastructure Discovery & Real-Time PostgreSQL Sync
 
 ### Added & Improved
