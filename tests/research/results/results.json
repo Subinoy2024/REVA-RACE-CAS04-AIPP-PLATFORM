@@ -1,0 +1,416 @@
+[
+  {
+    "id": "2c4f0586-2692-4933-8565-99d08891b4b1",
+    "experiment_type": "aipp",
+    "ci_platform": "github_actions",
+    "repository_url": "https://github.com/GoogleCloudPlatform/cloud-foundation-fabric",
+    "metrics": {
+      "generation_seconds": 14.717805299995234,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "074fd53a-fecc-461e-aee4-87da06dc3aa5"
+    },
+    "notes": "PIPELINE TYPE: INFRA-ONLY \u2014 Terraform on GCP",
+    "created_at": "2026-09-16T13:24:09.345115+00:00"
+  },
+  {
+    "id": "a9ecad4f-fbcd-45c3-9525-97f51168445b",
+    "experiment_type": "aipp",
+    "ci_platform": "github_actions",
+    "repository_url": "https://github.com/hashicorp/terraform",
+    "metrics": {
+      "generation_seconds": 18.565756194999267,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "6bf445ad-152e-4d86-8e09-16ec18338f1f"
+    },
+    "notes": "PIPELINE TYPE: INFRA-ONLY \u2014 Terraform apply",
+    "created_at": "2026-09-16T13:23:53.558670+00:00"
+  },
+  {
+    "id": "d41bfe10-3565-42c7-b7de-8980852063c6",
+    "experiment_type": "aipp",
+    "ci_platform": "azure_devops",
+    "repository_url": "https://github.com/dotnet-architecture/eShopOnContainers",
+    "metrics": {
+      "generation_seconds": 17.047629145003157,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "5ebaa186-c0d8-4e80-9003-c6761ef09c01"
+    },
+    "notes": "AKS microservices",
+    "created_at": "2026-09-16T13:23:34.104433+00:00"
+  },
+  {
+    "id": "ad8486e0-8a56-4f52-9084-9110d9381267",
+    "experiment_type": "aipp",
+    "ci_platform": "tekton",
+    "repository_url": "https://github.com/GoogleCloudPlatform/microservices-demo",
+    "metrics": {
+      "generation_seconds": 18.700786902998516,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "d33dcb97-88b4-495f-bb6c-1cad72657d56"
+    },
+    "notes": "GKE microservices with Istio",
+    "created_at": "2026-09-16T13:23:16.273561+00:00"
+  },
+  {
+    "id": "5afddbf5-cb7d-4552-8481-324b726f327a",
+    "experiment_type": "aipp",
+    "ci_platform": "github_actions",
+    "repository_url": "https://github.com/serverless/examples",
+    "metrics": {
+      "generation_seconds": 16.802558102004696,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "bab3dabb-15a5-4f57-beb3-07720aa5ab5d"
+    },
+    "notes": "Lambda + API Gateway",
+    "created_at": "2026-09-16T13:22:56.437573+00:00"
+  },
+  {
+    "id": "32065386-8ef9-4ab5-8410-8e499ceb7788",
+    "experiment_type": "aipp",
+    "ci_platform": "github_actions",
+    "repository_url": "https://github.com/tokio-rs/tokio",
+    "metrics": {
+      "generation_seconds": 13.382432491001964,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "81b8340f-7c6b-4153-9c36-e1beecf3c49f"
+    },
+    "notes": "library \u2014 CI only",
+    "created_at": "2026-09-16T13:22:38.485023+00:00"
+  },
+  {
+    "id": "c18596cc-d897-4f7f-9193-40df00dcdc8f",
+    "experiment_type": "aipp",
+    "ci_platform": "gitlab_ci",
+    "repository_url": "https://github.com/laravel/laravel",
+    "metrics": {
+      "generation_seconds": 15.055211118000443,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "a805e62c-ef9b-464e-b4e0-2281ffcd96e8"
+    },
+    "notes": "Cloud Run with Cloud SQL",
+    "created_at": "2026-09-16T13:22:24.183435+00:00"
+  },
+  {
+    "id": "c11da36d-ac2c-400c-aaab-1601702682e9",
+    "experiment_type": "aipp",
+    "ci_platform": "github_actions",
+    "repository_url": "https://github.com/rails/rails",
+    "metrics": {
+      "generation_seconds": 18.85560983000323,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "bedcee16-5fa9-4d03-b695-45b0dcce1ad6"
+    },
+    "notes": "ECS Fargate + RDS migrations",
+    "created_at": "2026-09-16T13:22:08.210431+00:00"
+  },
+  {
+    "id": "b078acec-aa21-478c-857e-28486a4c7db1",
+    "experiment_type": "aipp",
+    "ci_platform": "azure_devops",
+    "repository_url": "https://github.com/dotnet/aspnetcore",
+    "metrics": {
+      "generation_seconds": 21.023034318997816,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "ab08e0f3-be07-4b93-92cf-b757de532d64"
+    },
+    "notes": "Azure Functions serverless",
+    "created_at": "2026-09-16T13:21:48.342215+00:00"
+  },
+  {
+    "id": "2c65cd0c-db84-46cf-a7d5-77660b741e33",
+    "experiment_type": "aipp",
+    "ci_platform": "gitlab_ci",
+    "repository_url": "https://github.com/apache/kafka",
+    "metrics": {
+      "generation_seconds": 18.950816885997483,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "34f92376-d2bf-4f37-9d3a-dc051d841968"
+    },
+    "notes": "EKS + Helm \u2014 production-grade",
+    "created_at": "2026-09-16T13:21:26.035461+00:00"
+  },
+  {
+    "id": "82ac1f40-775a-426e-81b0-61030666981d",
+    "experiment_type": "aipp",
+    "ci_platform": "azure_devops",
+    "repository_url": "https://github.com/spring-projects/spring-boot",
+    "metrics": {
+      "generation_seconds": 17.697200891998364,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "5d630f45-96a6-4951-a32b-6dbb80e9d629"
+    },
+    "notes": "App Service Web App for containers",
+    "created_at": "2026-09-16T13:21:06.331744+00:00"
+  },
+  {
+    "id": "f7f3e53c-659a-49e4-b76c-11d3d23abdd4",
+    "experiment_type": "aipp",
+    "ci_platform": "tekton",
+    "repository_url": "https://github.com/prometheus/prometheus",
+    "metrics": {
+      "generation_seconds": 17.612815554006374,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "e1d541bc-b243-480f-8238-e068fb505e2b"
+    },
+    "notes": "GKE + Helm with canary",
+    "created_at": "2026-09-16T13:20:45.944607+00:00"
+  },
+  {
+    "id": "63665700-c0fc-43ec-a1ff-06484692f616",
+    "experiment_type": "aipp",
+    "ci_platform": "github_actions",
+    "repository_url": "https://github.com/gin-gonic/gin",
+    "metrics": {
+      "generation_seconds": 16.073780964994512,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "2cfd8517-ad61-4e3a-bddc-dd8eda4df8fc"
+    },
+    "notes": "Lambda deploy via SAM",
+    "created_at": "2026-09-16T13:20:27.244445+00:00"
+  },
+  {
+    "id": "c8c72676-4c7f-4690-9fc7-bb274b593d5f",
+    "experiment_type": "aipp",
+    "ci_platform": "gitlab_ci",
+    "repository_url": "https://github.com/gohugoio/hugo",
+    "metrics": {
+      "generation_seconds": 17.611782688996755,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "3809ac75-ad36-4cd3-a694-372f8bc03140"
+    },
+    "notes": "static site \u2014 GCS + Cloud CDN",
+    "created_at": "2026-09-16T13:20:08.002841+00:00"
+  },
+  {
+    "id": "13ec5f51-0cbd-4c0a-a261-444ba71ef31c",
+    "experiment_type": "aipp",
+    "ci_platform": "harness",
+    "repository_url": "https://github.com/vercel/next.js",
+    "metrics": {
+      "generation_seconds": 18.597445075996802,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "c4db9d4c-dd8c-4674-bb96-8c310c6c39b3"
+    },
+    "notes": "include Snyk SAST",
+    "created_at": "2026-09-16T13:19:49.605410+00:00"
+  },
+  {
+    "id": "9ffc9def-5459-4004-a2ed-11aa76844867",
+    "experiment_type": "aipp",
+    "ci_platform": "github_actions",
+    "repository_url": "https://github.com/reduxjs/redux",
+    "metrics": {
+      "generation_seconds": 21.333275036995474,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "40e6ba7f-8966-4df0-b464-ab564dbb5dc3"
+    },
+    "notes": "static SPA \u2014 publish to GCS bucket",
+    "created_at": "2026-09-16T13:19:30.307070+00:00"
+  },
+  {
+    "id": "17f328f7-e97f-437c-ac72-454438fa419f",
+    "experiment_type": "aipp",
+    "ci_platform": "azure_devops",
+    "repository_url": "https://github.com/nestjs/nest",
+    "metrics": {
+      "generation_seconds": 17.36024414900021,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "9b8180b5-59a3-4671-a10a-8dbb69c0b3ea"
+    },
+    "notes": "AKS + Helm deploy",
+    "created_at": "2026-09-16T13:19:07.986147+00:00"
+  },
+  {
+    "id": "865a5d47-7957-4200-8d9e-75cf2249d095",
+    "experiment_type": "aipp",
+    "ci_platform": "github_actions",
+    "repository_url": "https://github.com/expressjs/express",
+    "metrics": {
+      "generation_seconds": 17.271726849001425,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "1866ade1-0d8b-49a5-b889-796b1ec2acd3"
+    },
+    "notes": "ECS Fargate deploy with blue-green strategy",
+    "created_at": "2026-09-16T13:18:49.627111+00:00"
+  },
+  {
+    "id": "67b1c77a-9979-4897-bebc-5cfadc9aeaec",
+    "experiment_type": "aipp",
+    "ci_platform": "github_actions",
+    "repository_url": "https://github.com/psf/requests",
+    "metrics": {
+      "generation_seconds": 13.898633178003365,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "f7f02080-fc11-4c14-b887-05f1f084d765"
+    },
+    "notes": "library \u2014 CI only no deploy",
+    "created_at": "2026-09-16T13:18:31.222419+00:00"
+  },
+  {
+    "id": "5e977455-18b4-4631-8ae7-afc22c20b651",
+    "experiment_type": "aipp",
+    "ci_platform": "gitlab_ci",
+    "repository_url": "https://github.com/django/django",
+    "metrics": {
+      "generation_seconds": 20.13999376600259,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "3d51b9da-9a8b-48a4-8463-8945b919225c"
+    },
+    "notes": "use Trivy image scan and Cosign signing",
+    "created_at": "2026-09-16T13:18:16.289936+00:00"
+  },
+  {
+    "id": "59c83766-1d99-4491-96f9-9f644f4f7e1f",
+    "experiment_type": "aipp",
+    "ci_platform": "azure_devops",
+    "repository_url": "https://github.com/tiangolo/fastapi",
+    "metrics": {
+      "generation_seconds": 18.881559679997736,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "8018720e-2caa-40ee-8203-c8211e4c9f82"
+    },
+    "notes": "require manual approval for production",
+    "created_at": "2026-09-16T13:17:55.136316+00:00"
+  },
+  {
+    "id": "c0ef482d-2e6f-4798-a20a-ddbf77481717",
+    "experiment_type": "aipp",
+    "ci_platform": "github_actions",
+    "repository_url": "https://github.com/pallets/flask",
+    "metrics": {
+      "generation_seconds": 18.597052766999695,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "4a06e34e-11d8-40fc-bf7b-981787ceb5c3"
+    },
+    "notes": "include SonarQube + Bandit",
+    "created_at": "2026-09-16T13:17:33.676369+00:00"
+  },
+  {
+    "id": "e0dfa480-ec54-451e-bfb7-411cc4b8a913",
+    "experiment_type": "aipp",
+    "ci_platform": "github_actions",
+    "repository_url": "https://github.com/pallets/flask",
+    "metrics": {
+      "generation_seconds": 21.002667332002602,
+      "yaml_syntax_valid": true,
+      "platform_schema_valid": true,
+      "env_trigger_correct": true,
+      "security_ok": true,
+      "custom_requirement_addressed": true,
+      "manual_corrections_estimated": 0,
+      "run_id": "bb646b9f-5808-43f5-82c6-5bf204f54b44"
+    },
+    "notes": "include SonarQube + Bandit",
+    "created_at": "2026-09-16T13:13:02.441920+00:00"
+  }
+]

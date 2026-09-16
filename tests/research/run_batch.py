@@ -115,13 +115,13 @@ VARIANTS = {"static_template": _run_static_template, "generic_llm": _run_generic
 
 
 def main() -> int:
+    global BASE
     parser = argparse.ArgumentParser(description="AIPP research batch runner")
     parser.add_argument("--input", type=Path, required=True, help="CSV file with repo/branch/pat/ci/cloud/custom")
     parser.add_argument("--variant", choices=list(VARIANTS.keys()) + ["all"], default="all")
     parser.add_argument("--base", default=BASE, help="AIPP backend base URL")
     args = parser.parse_args()
 
-    global BASE
     BASE = args.base.rstrip("/")
 
     with args.input.open(newline="") as fh:
@@ -132,8 +132,11 @@ def main() -> int:
 
     variants = list(VARIANTS.keys()) if args.variant == "all" else [args.variant]
     for row in rows:
+        url = (row.get("repo_url") or "").strip()
+        if not url or url.startswith("#"):
+            continue
         for v in variants:
-            print(f"[{v}] {row.get('repo_url')}")
+            print(f"[{v}] {url}")
             metrics = VARIANTS[v](row)
             print("  metrics:", json.dumps(metrics))
             try:

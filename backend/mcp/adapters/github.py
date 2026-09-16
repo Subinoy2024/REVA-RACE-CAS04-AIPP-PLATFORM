@@ -16,6 +16,12 @@ from backend.core.exceptions import RepositoryAccessError
 from backend.core.logging import get_logger
 from backend.mcp.adapters.base import BaseMCPAdapter
 
+try:
+    from github import GithubException
+except ImportError:
+    class GithubException(Exception):
+        pass
+
 logger = get_logger(__name__)
 
 

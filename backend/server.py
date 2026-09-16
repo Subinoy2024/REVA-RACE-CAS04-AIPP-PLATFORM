@@ -49,7 +49,7 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(
-    title="AIPP — Automated Pipeline Platform",
+    title="AIPP - Automated Intelligent Pipeline Platform",
     version="0.1.0",
     lifespan=lifespan,
     description="Backend for the AIPP MS research project.",

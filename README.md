@@ -1,6 +1,6 @@
-# AIPP — Automated Pipeline Platform
+# AIPP — Automated Intelligent Pipeline Platform
 
-**AIPP (Automated Pipeline Platform)** is a production-grade, enterprise AI-Ops platform that analyzes real Git repositories and synthesizes explainable, deployment-ready CI/CD pipelines across 5 industry platforms (**Azure DevOps, GitHub Actions, GitLab CI, Harness, Tekton**) and 3 cloud providers (**Azure, AWS, GCP**).
+**AIPP (Automated Intelligent Pipeline Platform)** is a production-grade, enterprise AI-Ops platform that analyzes real Git repositories and synthesizes explainable, deployment-ready CI/CD pipelines across 5 industry platforms (**Azure DevOps, GitHub Actions, GitLab CI, Harness, Tekton**) and 3 cloud providers (**Azure, AWS, GCP**).
 
 It features a self-healing **Multi-Agent Orchestrator**, an evidence-grounded **PipelineDoctor (RAG RCA)** for CI/CD failure logs, a **Multi-Gate Policy Enforcement Engine** (AST linters + OPA Rego), and a **Human-In-The-Loop (HITL) Slack Bridge** backed by n8n SRE automation.
 

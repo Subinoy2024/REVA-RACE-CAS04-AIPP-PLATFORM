@@ -50,7 +50,7 @@ CUSTOM_CSS = _CSS_PATH.read_text() if _CSS_PATH.exists() else ""
 if _MATRIX_CSS_PATH.exists():
     CUSTOM_CSS += "\n\n/* ---- matrix login skin ---- */\n" + _MATRIX_CSS_PATH.read_text()
 
-TITLE = "AIPP · Automated Pipeline Platform"
+TITLE = "AIPP - Automated Intelligent Pipeline Platform"
 DESCRIPTION = (
     "**Control tower for CI/CD automation.** Repository-aware pipeline "
     "generation, evidence-grounded root-cause analysis, and live workflow "
@@ -140,7 +140,7 @@ def _render_footer() -> str:
         "<div class='aipp-footer'>"
         f"<span class='aipp-footer-copy'>© {year} "
         "<a href='https://dccloud.in.net' target='_blank' rel='noopener'>"
-        "dccloud.in.net</a> · AIPP — Automated Pipeline Platform</span>"
+        "dccloud.in.net</a> · AIPP - Automated Intelligent Pipeline Platform</span>"
         f"<span class='aipp-footer-counter' title='Total sessions since first boot'>"
         f"👁 {count:,} visits</span>"
         "</div>"

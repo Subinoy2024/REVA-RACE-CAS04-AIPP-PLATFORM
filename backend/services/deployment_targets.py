@@ -236,7 +236,7 @@ async def deploy(
                     title="chore(aipp): AIPP-generated CI/CD pipeline",
                     body=(
                         "This pull request was opened by **AIPP** "
-                        "(Automated Pipeline Platform) at the user's request.\n\n"
+                        "(Automated Intelligent Pipeline Platform) at the user's request.\n\n"
                         f"* Target CI platform: `{ci_platform}`\n"
                         f"* Base branch: `{branch}`\n"
                         f"* Content SHA-256: `{dep.yaml_sha256}`\n"
