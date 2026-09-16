@@ -143,3 +143,37 @@ def test_gitlab_sha_tag_expression_detected():
     yaml_text = "variables:\n  TAG: $CI_COMMIT_SHA\n"
     trace = build_directive_trace(custom_requirement="", yaml_text=yaml_text)
     assert trace["yaml_evidence"]["commit_scoped_image"] is True
+
+
+# ---------------------------------------------------------------------------
+# 6. Single-stage ("without multistage") directive recognised and enforced
+# ---------------------------------------------------------------------------
+def test_without_multistage_directive_enforced():
+    directive = "I want without multistage pipeline"
+    yaml_text = _mk_ado_yaml(custom_requirement=directive)
+    trace = build_directive_trace(
+        custom_requirement=directive,
+        yaml_text=yaml_text,
+        llm_acknowledgement="Custom requirement addressed: pipeline will be implemented without a multistage setup.",
+    )
+    assert trace["enforcement_status"] == "recognised_and_enforced"
+    assert trace["recognised"] is True
+    assert trace["is_single_stage"] is True
+    assert "stages:" not in yaml_text
+    assert "jobs:" in yaml_text
+
+
+# ---------------------------------------------------------------------------
+# 7. General custom requirement handled by AI planner
+# ---------------------------------------------------------------------------
+def test_general_prompt_handled_by_planner():
+    directive = "deploy to dev namespace with helm and notify slack on failure"
+    yaml_text = _mk_ado_yaml(custom_requirement=directive)
+    trace = build_directive_trace(
+        custom_requirement=directive,
+        yaml_text=yaml_text,
+        llm_acknowledgement="Custom requirement addressed: slack notifications added to pipeline.",
+    )
+    assert trace["enforcement_status"] == "handled_by_planner"
+    assert trace["recognised"] is True
+

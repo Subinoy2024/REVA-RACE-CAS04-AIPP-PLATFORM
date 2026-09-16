@@ -26,7 +26,7 @@ spec:
           command: ['sh', '-c', 'until nc -z -w 2 aipp-postgres.aipp.svc.cluster.local 5432; do echo waiting for postgres; sleep 2; done;']
       containers:
         - name: backend
-          image: dccloudops/aipp-backend:latest
+          image: dccloudops/aipp-backend:v0.39.0
           imagePullPolicy: IfNotPresent
           command: ["uvicorn", "backend.server:app", "--host", "0.0.0.0", "--port", "8001"]
           envFrom:

@@ -193,6 +193,26 @@ class AzureDevOpsGenerator(BaseGenerator):
                     }],
                 })
 
+        if self.is_single_stage:
+            consolidated_steps = []
+            seen_checkout = False
+            for st in doc.get("stages", []):
+                for j in st.get("jobs", []):
+                    j_steps = j.get("steps") or ((j.get("strategy") or {}).get("runOnce") or {}).get("deploy", {}).get("steps", [])
+                    for s in j_steps:
+                        if isinstance(s, dict) and "checkout" in s:
+                            if seen_checkout:
+                                continue
+                            seen_checkout = True
+                        consolidated_steps.append(s)
+
+            doc.pop("stages", None)
+            doc["jobs"] = [{
+                "job": "continuous_delivery",
+                "displayName": "End-to-End Pipeline (Single-Stage)",
+                "steps": consolidated_steps,
+            }]
+
         rendered = yaml.safe_dump(doc, sort_keys=False, width=140)
         # Iteration-20: inject `#` comments above every non-infra stage
         # so users get the same self-documenting output they get for infra.

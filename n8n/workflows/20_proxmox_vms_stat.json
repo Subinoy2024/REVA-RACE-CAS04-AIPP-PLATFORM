@@ -1,0 +1,389 @@
+{
+  "name": "ProxMox-VMs-Stat",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "vm-stat-proxmox",
+        "options": {
+          "responseCode": {
+            "values": {}
+          }
+        }
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        160,
+        -272
+      ],
+      "id": "e31a4de7-101d-4fce-9d90-c6abcc6a6e75",
+      "name": "Webhook",
+      "webhookId": "31ec2cf5-d031-46fb-9ee3-68e006952b03"
+    },
+    {
+      "parameters": {
+        "url": "https://192.168.88.141:8006/api2/json/cluster/resources?type=vm",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "PVEAPIToken=root@pam!n8n-decom=402ea20b-948e-4895-8372-991ec78c8897"
+            }
+          ]
+        },
+        "options": {
+          "allowUnauthorizedCerts": true
+        },
+        "includeOtherFields": true
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.4,
+      "position": [
+        368,
+        -272
+      ],
+      "id": "3b4d21bf-fb72-4d7e-84fe-677d457f0445",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "data",
+        "options": {},
+        "includeOtherFields": true
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        576,
+        -272
+      ],
+      "id": "c1083c93-beff-4ac2-b4d0-bf014a1a2380",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "963e294e-6c2a-4a46-ac1a-8508389ea50b",
+              "name": "vm_name",
+              "value": "={{ $json.name }}",
+              "type": "string"
+            },
+            {
+              "id": "aaf70e77-cbdd-428b-aa2a-739d5b04be97",
+              "name": "vmid",
+              "value": "={{ $json.vmid }}",
+              "type": "string"
+            },
+            {
+              "id": "77a05183-0f58-412f-91d6-51952b6780c1",
+              "name": "node",
+              "value": "={{ $json.node }}",
+              "type": "string"
+            },
+            {
+              "id": "450ee4bd-5faa-4455-9e17-65110f7d339a",
+              "name": "status",
+              "value": "={{ $json.status }}",
+              "type": "string"
+            },
+            {
+              "id": "062bf4ce-1573-4f8f-9b94-a1070f6a5301",
+              "name": "cpu",
+              "value": "={{ $json.maxcpu }}",
+              "type": "string"
+            },
+            {
+              "id": "381099fc-025b-4021-a023-461810cbed72",
+              "name": "ram_gb",
+              "value": "={{ ($json.maxmem / 1024 / 1024 / 1024).toFixed(1) }}",
+              "type": "string"
+            },
+            {
+              "id": "2c5dca5c-3336-4476-b016-8d8d43a0f906",
+              "name": "disk_gb",
+              "value": "={{ ($json.maxdisk / 1024 / 1024 / 1024).toFixed(1) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        784,
+        -272
+      ],
+      "id": "2fb6a1bf-6e90-4fd1-8bb1-c0b364b8fd58",
+      "name": "Edit Fields"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "87622eae-ce26-43ca-9663-9c8291b386cd",
+              "name": "line",
+              "value": "={{ $json.vm_name }} (VMID: {{ $json.vmid }}) Node: {{ $json.node }} | Status: {{ $json.status }} CPU: {{ $json.cpu }} | RAM: {{ $json.ram_gb }} GB | Disk: {{ $json.disk_gb }} GB",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        992,
+        -272
+      ],
+      "id": "92b11070-16b5-462b-8b05-1293e5ef1659",
+      "name": "Edit Fields1"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "line"
+            }
+          ]
+        },
+        "options": {},
+        "includeOtherFields": true
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1200,
+        -272
+      ],
+      "id": "3f6926b3-ce53-46dc-b857-f032d43df53c",
+      "name": "Aggregate"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "16c78a09-55ff-47ed-ac88-b59fc2501f29",
+              "name": "text",
+              "value": "={{ '\ud83d\udda5\ufe0f *Proxmox VE Virtual Machine Telemetry Summary*\\n\\n' + $json.line.join('\\n\\n') + '\\n\\n_\u26a1 Automated with dccloud workflow engine_' }}",
+              "type": "string"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1408,
+        -272
+      ],
+      "id": "86ee3782-064f-47c4-a357-f4381cbadf12",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "select": "channel",
+        "channelId": {
+          "__rl": true,
+          "value": "={{ $(\"Normalize Slack\").isExecuted ? $(\"Normalize Slack\").first()?.json?.channel_id : ($json.channel_id || \"C0ASVHQTN8M\") }}",
+          "mode": "id"
+        },
+        "text": "={{ $json.text }}",
+        "otherOptions": {
+          "includeLinkToWorkflow": false
+        }
+      },
+      "type": "n8n-nodes-base.slack",
+      "typeVersion": 2.4,
+      "position": [
+        1616,
+        -272
+      ],
+      "id": "3b4a603b-6046-4313-9b98-cce8ae8d0ce2",
+      "name": "Send a message",
+      "webhookId": "66ba7177-9662-4ea0-b038-a7e220b3c9ea",
+      "credentials": {
+        "slackApi": {
+          "id": "eRUkehIlMpYHVkSc",
+          "name": "Slack account 5"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "proxmox-slack",
+        "options": {},
+        "responseMode": "responseNode"
+      },
+      "id": "slack-pve-webhook",
+      "name": "Slack Webhook",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        200
+      ],
+      "webhookId": "proxmox-slack"
+    },
+    {
+      "parameters": {
+        "respondWith": "text",
+        "responseBody": "Working on it... Proxmox VE telemetry report will post shortly.",
+        "options": {}
+      },
+      "id": "slack-pve-ack",
+      "name": "Slack Ack (200)",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        220,
+        100
+      ]
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "pve-channel-id",
+              "name": "channel_id",
+              "type": "string",
+              "value": "={{ $json.body?.channel_id || 'C0ASVHQTN8M' }}"
+            }
+          ]
+        },
+        "includeOtherFields": true,
+        "options": {}
+      },
+      "id": "slack-pve-norm",
+      "name": "Normalize Slack",
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        220,
+        300
+      ]
+    }
+  ],
+  "connections": {
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields1": {
+      "main": [
+        [
+          {
+            "node": "Aggregate",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Aggregate": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields2": {
+      "main": [
+        [
+          {
+            "node": "Send a message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Slack Webhook": {
+      "main": [
+        [
+          {
+            "node": "Slack Ack (200)",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Normalize Slack",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Slack": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

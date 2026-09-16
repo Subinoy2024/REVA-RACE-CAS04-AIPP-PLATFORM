@@ -26,7 +26,7 @@ spec:
           command: ['sh', '-c', 'until nc -z -w 2 aipp-backend.aipp.svc.cluster.local 8001; do echo waiting for backend; sleep 2; done;']
       containers:
         - name: frontend
-          image: dccloudops/aipp-frontend:v0.36.0
+          image: dccloudops/aipp-frontend:v0.39.0
           imagePullPolicy: Always
           command: ["python3", "-u", "/app/frontend/gradio_app.py"]
           envFrom:

@@ -32,11 +32,9 @@ This directory contains production-ready Kubernetes manifests to deploy **AIPP (
 From the project root directory:
 
 ```bash
-# Build Backend image
-docker build -t aipp-backend:latest -f Dockerfile .
-
-# Build Frontend image
-docker build -t aipp-frontend:latest -f Dockerfile .
+# Build & tag Backend and Frontend with semantic version (e.g. v0.39.0)
+docker build -t dccloudops/aipp-backend:v0.39.0 -f Dockerfile .
+docker build -t dccloudops/aipp-frontend:v0.39.0 -f Dockerfile .
 ```
 
 ---

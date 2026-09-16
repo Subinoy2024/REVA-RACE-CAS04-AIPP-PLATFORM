@@ -42,6 +42,30 @@ _NO_CLI_PATTERNS = [
 ]
 
 
+_SINGLE_STAGE_PATTERNS = [
+    r"without\s+(a\s+)?multi[- ]?stage",
+    r"without\s+multistage",
+    r"no\s+multi[- ]?stage",
+    r"no\s+multistage",
+    r"single\s+stage",
+    r"single\s+job",
+    r"flat\s+pipeline",
+    r"one\s+stage",
+    r"disable\s+multi[- ]?stage",
+]
+
+
+def is_single_stage(custom_requirement: str | None) -> tuple[bool, str | None]:
+    """Return `(is_single_stage_requested, matched_pattern)`."""
+    if not custom_requirement:
+        return False, None
+    text = custom_requirement.lower()
+    for pat in _SINGLE_STAGE_PATTERNS:
+        if re.search(pat, text):
+            return True, pat
+    return False, None
+
+
 def _match_directive(custom_requirement: str | None) -> tuple[str, str | None]:
     """Return `(deploy_style, matched_pattern_or_None)`.
 
@@ -96,6 +120,7 @@ def build_directive_trace(
           "recognised":           True/False,
           "matched_pattern":      "<regex>" | None,
           "deploy_style":         "cli" | "python",
+          "is_single_stage":      True/False,
           "llm_acknowledgement":  "<planner's custom_requirement_addressed>",
           "yaml_evidence": {
               "banner_present":         True/False,
@@ -103,17 +128,24 @@ def build_directive_trace(
               "python_sdk_task_count":  <int>,
               "image_tag_expression":   "<TAG: … from vars block>" | None,
               "commit_scoped_image":    True/False,
+              "is_single_stage":        True/False | None,
           },
           "enforcement_status":  "recognised_and_enforced"
                                | "recognised_but_no_yaml_change"
+                               | "handled_by_planner"
                                | "not_recognised",
         }
     """
     style, matched = _match_directive(custom_requirement)
+    single_req, single_pat = is_single_stage(custom_requirement)
     text = (custom_requirement or "").strip()
 
     # ---- YAML self-inspection ------------------------------------------
     banner_present = "CUSTOM DEPLOYMENT REQUIREMENT (as entered by the user)" in yaml_text
+    is_single_stage_yaml = (
+        "stages:" not in yaml_text
+        or yaml_text.count("- stage:") <= 1
+    )
 
     # Total AzureCLI@2 tasks anywhere in the YAML. Note: a task may
     # legitimately remain in the *package* stage for ACR login even when
@@ -153,25 +185,31 @@ def build_directive_trace(
     )
 
     # ---- Enforcement verdict -------------------------------------------
-    # Verdict uses the *deploy-stage* CLI count, not the total, because
-    # a package-stage `AzureCLI@2` for ACR login is legitimate even in
-    # python-style deploys (Docker push needs a registry auth task).
     if not text:
         status = "no_directive_provided"
-    elif not matched:
-        status = "not_recognised"
-    elif style == "python" and python_sdk_count > 0 and az_cli_deploy == 0:
+    elif single_req and is_single_stage_yaml:
         status = "recognised_and_enforced"
-    elif style == "python":
+        matched = single_pat
+    elif single_req:
         status = "recognised_but_no_yaml_change"
-    else:
+        matched = single_pat
+    elif matched and style == "python" and python_sdk_count > 0 and az_cli_deploy == 0:
         status = "recognised_and_enforced"
+    elif matched and style == "python":
+        status = "recognised_but_no_yaml_change"
+    elif matched:
+        status = "recognised_and_enforced"
+    elif (llm_acknowledgement or "").strip():
+        status = "handled_by_planner"
+    else:
+        status = "not_recognised"
 
     return {
         "directive_text": text,
-        "recognised": matched is not None,
+        "recognised": (matched is not None or status == "handled_by_planner"),
         "matched_pattern": matched,
         "deploy_style": style,
+        "is_single_stage": is_single_stage_yaml if single_req else False,
         "llm_acknowledgement": (llm_acknowledgement or "").strip() or None,
         "yaml_evidence": {
             "banner_present": banner_present,
@@ -180,6 +218,7 @@ def build_directive_trace(
             "python_sdk_task_count": python_sdk_count,
             "image_tag_expression": image_tag_expr,
             "commit_scoped_image": commit_scoped,
+            "is_single_stage": is_single_stage_yaml if single_req else None,
         },
         "enforcement_status": status,
     }
@@ -211,6 +250,7 @@ class BaseGenerator:
         self.custom_requirement = (custom_requirement or "").strip()
         # Parsed style: `"cli"` (default) or `"python"` (user opted out of CLI).
         self.deploy_style = parse_deploy_style(self.custom_requirement)
+        self.is_single_stage, self.single_stage_pattern = is_single_stage(self.custom_requirement)
 
     # -----------------------------------------------------------------
     # Runner / agent selection helpers — used by every CI generator.

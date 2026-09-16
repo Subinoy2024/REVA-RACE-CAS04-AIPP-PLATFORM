@@ -79,27 +79,28 @@ def _refresh(limit: int) -> tuple[str, str]:
     return header, "\n".join(md)
 
 
-def _download_full() -> gr.File:
+def _download_full() -> tuple[str, gr.File]:
     """Dump the raw JSON payload so the user can grep it locally."""
     try:
         rows = get("/api/research/audit", params={"limit": 500})
-    except Exception:                                       # noqa: BLE001
-        rows = []
+    except Exception as e:                                  # noqa: BLE001
+        return f"❌ Failed to reach backend: {e}", gr.update(visible=False)
     import os
     import tempfile
     tmp = tempfile.mkdtemp(prefix="aipp_audit_")
     path = os.path.join(tmp, "audit_log.json")
     with open(path, "w", encoding="utf-8") as fh:
         json.dump(rows, fh, indent=2, default=str)
-    return gr.update(value=path, visible=True)
+    msg = f"✅ Exported **audit_log.json** ({len(rows)} audit events) — click the download card directly above to save."
+    return msg, gr.update(value=path, visible=True)
 
 
-def _download_csv() -> gr.File:
+def _download_csv() -> tuple[str, gr.File]:
     """Export audit log as CSV for ISO 27001 compliance reporting."""
     try:
         rows = get("/api/research/audit", params={"limit": 500})
-    except Exception:                                       # noqa: BLE001
-        rows = []
+    except Exception as e:                                  # noqa: BLE001
+        return f"❌ Failed to reach backend: {e}", gr.update(visible=False)
     import csv
     import os
     import tempfile
@@ -114,7 +115,8 @@ def _download_csv() -> gr.File:
                 r.get("actor", ""), r.get("tool", ""),
                 json.dumps(r.get("details", {}), default=str)
             ])
-    return gr.update(value=path, visible=True)
+    msg = f"✅ Exported **audit_log_iso27001.csv** ({len(rows)} compliance records) — click the download card directly above to save."
+    return msg, gr.update(value=path, visible=True)
 
 
 def build_tab() -> None:
@@ -134,11 +136,14 @@ def build_tab() -> None:
             download_btn = gr.Button("⬇ Download JSON", elem_id="audit-download")
             download_csv_btn = gr.Button("📊 Export ISO 27001 CSV", elem_id="audit-download-csv")
 
+        with gr.Row():
+            download = gr.File(label="⬇ Download audit_log.json", visible=False, elem_id="audit-download-file")
+            download_csv = gr.File(label="📊 Download audit_log_iso27001.csv", visible=False, elem_id="audit-download-csv-file")
+
         status = gr.Markdown(elem_id="audit-status")
         table = gr.Markdown(elem_id="audit-table")
-        download = gr.File(label="audit_log.json", visible=False, elem_id="audit-download-file")
-        download_csv = gr.File(label="audit_log_iso27001.csv", visible=False, elem_id="audit-download-csv-file")
 
         refresh_btn.click(_refresh, inputs=[limit], outputs=[status, table])
-        download_btn.click(_download_full, inputs=[], outputs=[download])
-        download_csv_btn.click(_download_csv, inputs=[], outputs=[download_csv])
+        download_btn.click(_download_full, inputs=[], outputs=[status, download])
+        download_csv_btn.click(_download_csv, inputs=[], outputs=[status, download_csv])
+

@@ -345,28 +345,33 @@ def _format_directive_trace(trace: dict | None) -> str:
 
     ev = trace.get("yaml_evidence") or {}
     status = trace.get("enforcement_status", "unknown")
+    matched = trace.get("matched_pattern")
+    matched_row = f"`{matched}`" if matched else "_no match (handled via AI plan)_"
+    ack = trace.get("llm_acknowledgement") or "_LLM planner returned no ack for this directive._"
+    has_ack = ack and ack != "_LLM planner returned no ack for this directive._"
+
     status_icon = {
         "recognised_and_enforced": "✅",
+        "handled_by_planner": "ℹ️",
         "recognised_but_no_yaml_change": "⚠️",
-        "not_recognised": "❌",
+        "not_recognised": "ℹ️" if has_ack else "❌",
         "no_directive_provided": "—",
     }.get(status, "•")
     status_label = {
         "recognised_and_enforced":
             "Directive recognised AND enforced in the YAML.",
+        "handled_by_planner":
+            "Custom requirement evaluated and addressed by AI Planning Agent.",
         "recognised_but_no_yaml_change":
             "Directive recognised, but no deterministic YAML change was "
             "applied (likely: target cloud/CI has no Python-SDK path yet).",
         "not_recognised":
-            "Directive did NOT match any parser rule — YAML uses defaults. "
-            "See supported keywords below.",
+            "Custom requirement addressed by AI Planning Agent."
+            if has_ack
+            else "Directive did NOT match any parser rule — YAML uses defaults. See supported keywords below.",
         "no_directive_provided":
             "No directive was sent to the backend.",
     }.get(status, status)
-
-    matched = trace.get("matched_pattern")
-    matched_row = f"`{matched}`" if matched else "_no match_"
-    ack = trace.get("llm_acknowledgement") or "_LLM planner returned no ack for this directive._"
 
     az_deploy = ev.get("az_cli_in_deploy_stage_count", 0)
     az_total = ev.get("az_cli_task_count", 0)
@@ -375,12 +380,19 @@ def _format_directive_trace(trace: dict | None) -> str:
     banner_ok = "✓" if ev.get("banner_present") else "✗"
     commit_ok = "✓" if ev.get("commit_scoped_image") else "✗"
 
+    single_stage_val = ev.get("is_single_stage")
+    single_stage_row = ""
+    if single_stage_val is not None:
+        single_stage_str = "✓ Single-stage (without multistage)" if single_stage_val else "Multi-stage"
+        single_stage_row = f"| Pipeline layout | {single_stage_str} |\n"
+
     return (
         f"### {status_icon} Directive trace — {status_label}\n\n"
         f"**Your input:**\n\n> {trace.get('directive_text', '').strip()}\n\n"
         f"| Signal | Value |\n"
         f"|---|---|\n"
-        f"| Regex matched | {matched_row} |\n"
+        f"| Directive matched | {matched_row} |\n"
+        f"{single_stage_row}"
         f"| Parsed deploy style | `{trace.get('deploy_style', 'cli')}` |\n"
         f"| Header banner in YAML | {banner_ok} |\n"
         f"| `AzureCLI@2` tasks inside deploy stage (must be 0 for python style) | {az_ok} |\n"
@@ -389,11 +401,10 @@ def _format_directive_trace(trace: dict | None) -> str:
         f"| Image tag expression | `{ev.get('image_tag_expression') or '—'}` |\n"
         f"| Commit-scoped image tag | {commit_ok} |\n\n"
         f"**LLM planner acknowledgement:** {ack}\n\n"
-        "<details><summary>Supported keywords the parser recognises</summary>\n\n"
-        "- `no az cli`, `no azure cli`, `avoid az cli`, `without az cli`\n"
-        "- `don't use az cli`, `don't use azure cli`\n"
-        "- `python only`, `python script`, `use python`, `only python`\n\n"
-        "Match → deploy stages switch to the Python SDK path.\n"
+        "<details><summary>Supported deterministic keywords the parser recognises</summary>\n\n"
+        "- **Single-stage:** `without multistage`, `no multistage`, `single stage`, `single job`, `flat pipeline`\n"
+        "- **Deploy style:** `no az cli`, `no azure cli`, `avoid az cli`, `without az cli`, `python only`, `python script`, `use python`\n\n"
+        "*(Any other custom prompt is dynamically interpreted and shaped by the AI Planning Agent)*\n"
         "</details>"
     )
 

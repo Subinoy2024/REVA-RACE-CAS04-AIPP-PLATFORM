@@ -27,6 +27,9 @@ class PlatformValidator:
         required = REQUIRED_KEYS.get(platform, set())
         # For multi-doc YAML (Tekton) at least one doc must satisfy required keys
         for d in docs:
-            if isinstance(d, dict) and required.issubset(d.keys()):
-                return True, f"top-level keys present: {sorted(required)}"
+            if isinstance(d, dict):
+                if platform == CIPlatform.azure_devops and ("stages" in d or "jobs" in d or "steps" in d):
+                    return True, "top-level keys present: ['stages' or 'jobs']"
+                if required and required.issubset(d.keys()):
+                    return True, f"top-level keys present: {sorted(required)}"
         return False, f"missing required top-level keys for {platform.value}: {sorted(required)}"
